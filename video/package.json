@@ -1,0 +1,21 @@
+{
+  "name": "refract-video",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio",
+    "render:all": "bash render-all.sh"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.522",
+    "@remotion/google-fonts": "^4.0.522",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "remotion": "^4.0.522"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "typescript": "^7.0.2"
+  }
+}

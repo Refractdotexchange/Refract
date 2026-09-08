@@ -26,5 +26,7 @@ next-env.d.ts
 .vscode
 *.swp
 
-# separate Remotion project with its own toolchain; not part of this app
-video
+# Remotion project: source is tracked, its dependencies and renders are not.
+# It is excluded from the app build via tsconfig and .vercelignore instead.
+video/node_modules
+video/out
