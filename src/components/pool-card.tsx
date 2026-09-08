@@ -80,7 +80,7 @@ export function PoolCard({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-        <TokenAvatar address={pool.token} symbol={pool.symbol} size={38} />
+        <TokenAvatar address={pool.token} symbol={pool.symbol} size={38} logoUrl={pool.logoUrl} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="font-display clip-text" style={{ fontWeight: 700, fontSize: 15.5 }}>
             <SafeText value={pool.symbol} />

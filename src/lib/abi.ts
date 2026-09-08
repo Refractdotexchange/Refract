@@ -10,6 +10,17 @@ export const erc20Abi = parseAbi([
   "function approve(address spender, uint256 amount) returns (bool)",
 ]);
 
+/**
+ * Launchpad tokens on this chain carry their own art: a `logo()` returning an
+ * ipfs:// URI, plus a free-text `description()`. Neither is ERC20, so these
+ * calls are allowed to fail — plenty of tokens (WETH, USDG) do not implement
+ * them, and the multicall simply reports those entries as reverted.
+ */
+export const launchTokenAbi = parseAbi([
+  "function logo() view returns (string)",
+  "function description() view returns (string)",
+]);
+
 /** Some launchpad tokens return bytes32 for name/symbol instead of string. */
 export const erc20Bytes32Abi = parseAbi([
   "function name() view returns (bytes32)",

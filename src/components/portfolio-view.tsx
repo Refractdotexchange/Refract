@@ -18,6 +18,7 @@ type Holding = {
   valueEth: number | null;
   valueUsd: number | null;
   venue: string | null;
+  logoUrl: string | null;
 };
 
 type Portfolio = {
@@ -142,7 +143,7 @@ export function PortfolioView() {
                 style={{ textDecoration: "none", color: "inherit" }}
               >
                 <Row
-                  avatar={<TokenAvatar address={h.token} symbol={h.symbol} size={32} />}
+                  avatar={<TokenAvatar address={h.token} symbol={h.symbol} size={32} logoUrl={h.logoUrl} />}
                   symbol={h.symbol}
                   name={h.name}
                   amount={h.amount}

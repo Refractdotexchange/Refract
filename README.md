@@ -184,6 +184,21 @@ All routes read chain state directly and return JSON.
 | `GET /api/portfolio/{address}?window=` | Wallet holdings with marks. |
 | `GET /api/rewards/{address}?window=` | Routed volume and accrued cashback. |
 
+## Brand assets
+
+Source and exports live in [`public/brand/`](public/brand).
+
+| File | Size | Use |
+|---|---|---|
+| `logo.svg` | vector | Source mark, scales to any size |
+| `logo-400.png` | 400×400 | Profile picture (X, GitHub, Discord) |
+| `logo-1000.png` | 1000×1000 | High-resolution / print |
+| `banner.html` | source | Banner source, edit and re-render |
+| `banner-1500x500.png` | 1500×500 | X / Twitter header |
+
+The mark is sized to fill a circular crop and stays legible down to 32px. The banner keeps all
+copy clear of the avatar overlap in the lower-left and inside the mobile side-crop.
+
 ## Stack
 
 Next.js 15 (App Router) · React 19 · TypeScript · wagmi · viem · TanStack Query · Tailwind CSS v4

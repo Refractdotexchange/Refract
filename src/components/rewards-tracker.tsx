@@ -43,7 +43,7 @@ export function RewardsTracker() {
         <RateTile
           label="Boosted rate"
           value={data ? `${(data.boostedBps / 100).toFixed(2)}%` : "0.30%"}
-          sub="when $PRSM staking goes live"
+          sub="when $RFRT staking goes live"
           tone="var(--brass)"
           dim
         />

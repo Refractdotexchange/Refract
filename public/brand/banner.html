@@ -1,0 +1,81 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1500px;height:500px;overflow:hidden;background:#000}
+  .stage{position:relative;width:1500px;height:500px;background:
+     radial-gradient(ellipse 70% 120% at 68% 50%, rgba(245,197,66,.14), transparent 62%),
+     radial-gradient(ellipse 50% 90% at 12% 46%, rgba(224,165,52,.07), transparent 66%),
+     #000;}
+  /* fine grid, faded out at the edges */
+  .grid{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(245,197,66,.075) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(245,197,66,.075) 1px,transparent 1px);
+    background-size:60px 60px;
+    -webkit-mask-image:radial-gradient(ellipse 80% 100% at 50% 50%,#000 30%,transparent 82%);}
+  svg{position:absolute;inset:0}
+  .copy{position:absolute;left:296px;top:50%;transform:translateY(-50%);}
+  .word{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;font-size:92px;
+        letter-spacing:-.055em;color:#f7f0dd;line-height:1;}
+  .word b{font-weight:700;background:linear-gradient(92deg,#fff8e6,#ffd976 38%,#f5c542 68%,#e0a534);
+          -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .tag{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:500;font-size:27px;
+       color:#b3ad9c;margin-top:16px;letter-spacing:-.012em;}
+  .chip{display:inline-flex;align-items:center;gap:9px;margin-top:22px;
+        font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.2em;
+        text-transform:uppercase;color:#8a8474;border:1px solid rgba(245,197,66,.28);
+        border-radius:999px;padding:8px 17px;}
+  .dot{width:7px;height:7px;border-radius:50%;background:#b8d44a;box-shadow:0 0 9px #b8d44a;}
+</style>
+<div class="stage">
+  <div class="grid"></div>
+  <svg viewBox="0 0 1500 500" width="1500" height="500" fill="none">
+    <defs>
+      <linearGradient id="bface" x1="985" y1="150" x2="985" y2="366" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#f5c542" stop-opacity=".26"/>
+        <stop offset="100%" stop-color="#a8701a" stop-opacity=".04"/>
+      </linearGradient>
+      <linearGradient id="bedge" x1="985" y1="144" x2="985" y2="372" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#fff8e6"/><stop offset="52%" stop-color="#f5c542"/>
+        <stop offset="100%" stop-color="#b8801e"/>
+      </linearGradient>
+      <linearGradient id="bbeam" x1="806" y1="0" x2="944" y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#f7f0dd" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#fffdf6" stop-opacity=".95"/>
+      </linearGradient>
+      <filter id="soft" x="-25%" y="-60%" width="150%" height="220%">
+        <feGaussianBlur stdDeviation="9"/>
+      </filter>
+    </defs>
+
+    <!-- incoming beam, fading in so it reads as light arriving -->
+    <path d="M812 258 H944" stroke="url(#bbeam)" stroke-width="9" stroke-linecap="round"/>
+
+    <!-- prism -->
+    <path d="M985 150 L1078 366 H892 Z" fill="url(#bface)" stroke="url(#bedge)"
+          stroke-width="9" stroke-linejoin="round"/>
+
+    <!-- refracted spectrum, glow pass then crisp pass -->
+    <g filter="url(#soft)" opacity=".5" stroke-width="9" stroke-linecap="round">
+      <path d="M1022 236 L1468 112" stroke="#fff8e6"/>
+      <path d="M1031 258 L1500 198" stroke="#ffd976"/>
+      <path d="M1040 277 L1500 300" stroke="#f5c542"/>
+      <path d="M1048 297 L1468 398" stroke="#c98f22"/>
+    </g>
+    <g stroke-width="9" stroke-linecap="round">
+      <path d="M1022 236 L1468 112" stroke="#fff8e6"/>
+      <path d="M1031 258 L1500 198" stroke="#ffd976"/>
+      <path d="M1040 277 L1500 300" stroke="#f5c542"/>
+      <path d="M1048 297 L1468 398" stroke="#c98f22"/>
+    </g>
+  </svg>
+
+  <div class="copy">
+    <div class="word">RE<b>FRACT</b></div>
+    <div class="tag">One trade in. Every route compared.</div>
+    <div class="chip"><span class="dot"></span>Robinhood Chain · 4663</div>
+  </div>
+</div>

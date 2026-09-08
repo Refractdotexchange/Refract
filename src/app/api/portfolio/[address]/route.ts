@@ -4,6 +4,7 @@ import { CONTRACTS, V3_FEE_TIERS, serverClient } from "@/lib/chain";
 import {
   TRANSFER_TOPIC,
   erc20Abi,
+  launchTokenAbi,
   uniswapV2FactoryAbi,
   uniswapV2PairAbi,
   uniswapV3FactoryAbi,
@@ -11,6 +12,7 @@ import {
 } from "@/lib/abi";
 import { cached, getRawLogs, latestBlock, pool as runPool, withRetry } from "@/lib/rpc";
 import { getEthUsd } from "@/lib/quote";
+import { hydrateLogos, toHttpUrl } from "@/lib/logo";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -99,24 +101,27 @@ export async function GET(
             { address: token, abi: erc20Abi, functionName: "symbol" } as const,
             { address: token, abi: erc20Abi, functionName: "name" } as const,
             { address: token, abi: erc20Abi, functionName: "decimals" } as const,
+            { address: token, abi: launchTokenAbi, functionName: "logo" } as const,
           ]),
         }),
       );
 
       const held = candidates
         .map((token, i) => {
-          const b = meta[i * 4];
+          const b = meta[i * 5];
           const balance = b.status === "success" ? (b.result as bigint) : 0n;
           if (balance === 0n) return null;
-          const sym = meta[i * 4 + 1];
-          const nm = meta[i * 4 + 2];
-          const dec = meta[i * 4 + 3];
+          const sym = meta[i * 5 + 1];
+          const nm = meta[i * 5 + 2];
+          const dec = meta[i * 5 + 3];
+          const logo = meta[i * 5 + 4];
           return {
             token,
             balance,
             symbol: sym.status === "success" ? String(sym.result) : "???",
             name: nm.status === "success" ? String(nm.result) : "Unknown token",
             decimals: dec.status === "success" ? Number(dec.result) : 18,
+            logoUrl: logo?.status === "success" ? toHttpUrl(logo.result) : null,
           };
         })
         .filter((x): x is NonNullable<typeof x> => x !== null);
@@ -223,6 +228,7 @@ export async function GET(
           return {
             token: h.token,
             symbol: h.symbol,
+            logoUrl: h.logoUrl,
             name: h.name,
             decimals: h.decimals,
             balance: h.balance.toString(),
@@ -234,6 +240,10 @@ export async function GET(
           };
         })
         .sort((a, b) => (b.valueUsd ?? -1) - (a.valueUsd ?? -1));
+
+      // Follow any logo() values that point at metadata JSON rather than an
+      // image. Cached by CID, so repeat wallets cost nothing.
+      await hydrateLogos(holdings);
 
       const eth = Number(nativeBalance) / 1e18;
       const tokensUsd = holdings.reduce((s, h) => s + (h.valueUsd ?? 0), 0);

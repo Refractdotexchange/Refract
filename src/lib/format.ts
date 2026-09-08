@@ -27,6 +27,15 @@ export function parseUnits(input: string, decimals: number): bigint {
 }
 
 /** Compact notation for dashboards: 1.2K / 3.4M / 5.6B. */
+/**
+ * Drop trailing zeros from a fixed-point string — but only after a decimal
+ * point. Trimming unconditionally also eats the zeros of a whole number, so
+ * "100" became "1" and 100,000 rendered as "1K" instead of "100K".
+ */
+function trimZeros(s: string): string {
+  return s.includes(".") ? s.replace(/\.?0+$/, "") : s;
+}
+
 export function compact(n: number, digits = 2): string {
   if (!Number.isFinite(n)) return "—";
   const abs = Math.abs(n);
@@ -37,11 +46,11 @@ export function compact(n: number, digits = 2): string {
     [1e3, "K"],
   ];
   for (const [size, suffix] of units) {
-    if (abs >= size) return (n / size).toFixed(digits).replace(/\.?0+$/, "") + suffix;
+    if (abs >= size) return trimZeros((n / size).toFixed(digits)) + suffix;
   }
   if (abs === 0) return "0";
   if (abs < 0.0001) return n.toExponential(2);
-  return n.toFixed(abs < 1 ? 4 : digits).replace(/\.?0+$/, "");
+  return trimZeros(n.toFixed(abs < 1 ? 4 : digits));
 }
 
 export function usd(n: number | null | undefined): string {

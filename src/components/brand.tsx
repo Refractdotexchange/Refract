@@ -178,22 +178,14 @@ export function TokenAvatar({
   // (44-69%) so the same avatar stays legible on both grounds.
   const h = hashCode(address.toLowerCase());
   const angle = (h >> 3) % 360;
+  // Hue is constrained to the 96-150deg green band: adjacent to the lime accent
+  // so avatars sit inside the palette, but clear enough of it that a token
+  // never reads as an accent chip.
+  const hue = 96 + (h % 54);
+  const hue2 = (hue + 8 + ((h >> 13) % 16)) % 360;
   const light = 44 + (h % 26);
-  const light2 = Math.max(14, light - 20 - ((h >> 9) % 12));
+  const light2 = Math.max(16, light - 20 - ((h >> 9) % 12));
   const letters = (symbol || address.slice(2, 4)).replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
-
-  if (logoUrl) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return (
-      <img
-        src={logoUrl}
-        alt={symbol ?? ""}
-        width={size}
-        height={size}
-        style={{ borderRadius: "50%", display: "block", flexShrink: 0, objectFit: "cover" }}
-      />
-    );
-  }
 
   return (
     <span
@@ -206,7 +198,9 @@ export function TokenAvatar({
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        background: `linear-gradient(${angle}deg, hsl(0 0% ${light}%), hsl(0 0% ${light2}%))`,
+        position: "relative",
+        overflow: "hidden",
+        background: `linear-gradient(${angle}deg, hsl(${hue} 74% ${light}%), hsl(${hue2} 66% ${light2}%))`,
         color: "rgba(255,255,255,.94)",
         fontSize: size * 0.36,
         fontWeight: 700,
@@ -217,6 +211,27 @@ export function TokenAvatar({
       }}
     >
       {letters}
+      {logoUrl ? (
+        // Layered over the generated avatar rather than replacing it. An
+        // <img> with an empty alt renders nothing when it fails, so a dead
+        // IPFS gateway leaves the fallback visible instead of a broken icon —
+        // and it needs no error handler, so this stays a server component.
+        <img
+          // eslint-disable-next-line @next/next/no-img-element
+          src={logoUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            borderRadius: "50%",
+          }}
+        />
+      ) : null}
     </span>
   );
 }

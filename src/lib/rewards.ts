@@ -12,7 +12,7 @@ import { getEthUsd } from "./quote";
  * verifiable by anyone against chain 4663.
  */
 export const CASHBACK_BPS = 12; // 0.12% of routed volume
-export const BOOSTED_BPS = 30; // 0.30% once $PRSM staking is live
+export const BOOSTED_BPS = 30; // 0.30% once $RFRT staking is live
 export const MIN_QUALIFYING_ETH = 0.001;
 
 const V3_SWAP_TOPIC =

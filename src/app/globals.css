@@ -1,71 +1,68 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   REFRACT design system — monochrome
-   Identity: a pure black ground (pure white in light mode) and a refraction
-   ramp built from luminance alone. No hue anywhere, so the refract splits light
-   into greys rather than colours. Deliberately distinct from the olive/lime
-   and cream/serif looks common to this category.
+   REFRACT design system
 
-   One consequence worth knowing: gain and loss can no longer differ by hue.
-   --olive (positive) and --ember (negative) are separated by luminance only,
-   so the +/- sign carries the meaning. Anywhere a number's direction matters,
-   keep the sign visible — do not rely on the colour alone.
+   Identity: a pure black ground with an acid lime used as an accent, not a
+   wash. The surfaces stay neutral so the lime reads as light being refracted
+   out of the dark rather than as a colour scheme painted over everything.
+
+   Lime carries emphasis only: the mark, primary actions, active states, chart
+   ink and the spectrum. Gain and loss keep their own hues, so a number's
+   direction never depends on the reader spotting a luminance step.
    ========================================================================== */
 
 :root {
-  /* Pure black ground. Every surface above it is a step of neutral grey —
-     no hue anywhere, so the spectrum reads as luminance alone. */
+  /* Pure black ground; surfaces above it are neutral greys so the accent has
+     somewhere quiet to sit. */
   --bg: #000000;
-  --bg-2: #0c0c0c;
-  --surface: #1a1a1a;
-  --surface-2: #242424;
-  --surface-3: #333333;
-  --line: rgba(255, 255, 255, 0.24);
-  --line-soft: rgba(255, 255, 255, 0.12);
-  --text: #fafafa;
-  --muted: #b4b4b4;
-  --faint: #808080;
+  --bg-2: #0a0a0a;
+  --surface: #141414;
+  --surface-2: #1e1e1e;
+  --surface-3: #2c2c2c;
+  --line: rgba(163, 230, 53, 0.18);
+  --line-soft: rgba(163, 230, 53, 0.09);
+  /* Faintly green white: pure #fff against the lime reads blue. */
+  --text: #f2f5ee;
+  --muted: #9ba695;
+  --faint: #67715f;
 
-  /* The refraction ramp, light to deep. Formerly the gold family; the names
-     are kept so every downstream rule follows without edits. */
-  --champagne: #ffffff;
-  --honey: #e4e4e4;
-  --gold: #c9c9c9;
-  --brass: #9c9c9c;
-  --bronze: #6d6d6d;
+  /* The accent ramp, light to deep. */
+  --champagne: #e6ffb3;
+  --honey: #c9f56e;
+  --gold: #a3e635;
+  --brass: #79b520;
+  --bronze: #4b7a12;
 
-  /* Positive and negative can no longer differ by hue, so they differ by
-     luminance: gains sit at full white, losses at mid grey. The sign glyph
-     carries the meaning — see the note in README. */
-  --olive: #ffffff;
-  --ember: #8f8f8f;
+  /* Direction is hue-coded, so gain and loss are never ambiguous. */
+  --olive: #a3e635;
+  --ember: #ff5f56;
 
   --accent: var(--gold);
-  --accent-ink: #000000;
+  --accent-ink: #0b1400;
   --spectrum: linear-gradient(
     90deg,
-    #ffffff 0%,
-    #ededed 16%,
-    #d6d6d6 36%,
-    #b8b8b8 56%,
-    #909090 76%,
-    #5e5e5e 100%
+    #e6ffb3 0%,
+    #d2fa8a 16%,
+    #b8f055 36%,
+    #a3e635 56%,
+    #79b520 76%,
+    #4b7a12 100%
   );
-  --glow: 0 0 0 1px rgba(255, 255, 255, 0.32), 0 18px 60px -12px rgba(255, 255, 255, 0.22);
+  --glow: 0 0 0 1px rgba(163, 230, 53, 0.3), 0 18px 60px -12px rgba(163, 230, 53, 0.38);
 
-  /* Progress fills need their own ramp. The brand spectrum bottoms out at
-     #5e5e5e, which is within a few points of the --surface-3 track, so a bar
-     using it loses its whole right-hand half. This one stays clear of it. */
-  --meter: linear-gradient(90deg, #ffffff, #cfcfcf);
+  /* Progress fills need their own ramp: the brand spectrum bottoms out dark
+     enough to vanish against the --surface-3 track, losing the bar's right
+     half. This one stays clear of it. */
+  --meter: linear-gradient(90deg, #d2fa8a, #a3e635 55%, #79b520);
 
   /* Backdrop and control paints, themed here so the rules below stay neutral. */
-  --aurora-1: rgba(255, 255, 255, 0.4);
-  --aurora-2: rgba(255, 255, 255, 0.3);
-  --aurora-3: rgba(255, 255, 255, 0.26);
-  --btn-grad: linear-gradient(135deg, #ffffff, #ebebeb 34%, #cfcfcf 68%, #b0b0b0);
-  --btn-shadow: 0 10px 34px -10px rgba(255, 255, 255, 0.3);
-  --focus-ring: rgba(255, 255, 255, 0.16);
+  --aurora-1: rgba(163, 230, 53, 0.5);
+  --aurora-2: rgba(121, 181, 32, 0.4);
+  --aurora-3: rgba(75, 122, 18, 0.36);
+  --btn-grad: linear-gradient(135deg, #d2fa8a, #a3e635 40%, #8ed425 75%, #79b520);
+  --btn-shadow: 0 10px 34px -10px rgba(163, 230, 53, 0.55);
+  --focus-ring: rgba(163, 230, 53, 0.22);
 
   --r-sm: 10px;
   --r-md: 14px;
@@ -76,48 +73,45 @@
 }
 
 :root[data-theme="light"] {
-  /* Pure white ground with the ramp inverted, so contrast holds both ways. */
+  /* Pure white ground. The limes deepen so they hold their weight on light. */
   --bg: #ffffff;
-  --bg-2: #f0f0f0;
+  --bg-2: #f4f7ec;
   --surface: #ffffff;
-  --surface-2: #f0f0f0;
-  --surface-3: #dedede;
-  --line: rgba(0, 0, 0, 0.2);
-  --line-soft: rgba(0, 0, 0, 0.1);
-  --text: #0a0a0a;
-  --muted: #4f4f4f;
-  --faint: #7a7a7a;
+  --surface-2: #f4f7ec;
+  --surface-3: #e4ecd6;
+  --line: rgba(75, 122, 18, 0.22);
+  --line-soft: rgba(75, 122, 18, 0.11);
+  --text: #0e1408;
+  --muted: #4e5845;
+  --faint: #7d8874;
 
-  --champagne: #6e6e6e;
-  --honey: #4f4f4f;
-  --gold: #1c1c1c;
-  --brass: #383838;
-  --bronze: #000000;
+  --champagne: #6d9e1f;
+  --honey: #5b8a17;
+  --gold: #3f6b0d;
+  --brass: #4d7a12;
+  --bronze: #24430a;
 
-  --olive: #000000;
-  --ember: #7a7a7a;
+  --olive: #35700c;
+  --ember: #c8372a;
 
   --accent: var(--gold);
   --accent-ink: #ffffff;
   --spectrum: linear-gradient(
     90deg,
-    #000000 0%,
-    #2b2b2b 16%,
-    #4a4a4a 36%,
-    #6b6b6b 56%,
-    #909090 76%,
-    #bdbdbd 100%
+    #6d9e1f 0%,
+    #5b8a17 20%,
+    #3f6b0d 45%,
+    #2f5209 70%,
+    #24430a 100%
   );
-  --glow: 0 0 0 1px rgba(0, 0, 0, 0.18), 0 18px 50px -14px rgba(0, 0, 0, 0.22);
-
-  --meter: linear-gradient(90deg, #000000, #454545);
-
-  --aurora-1: rgba(0, 0, 0, 0.2);
-  --aurora-2: rgba(0, 0, 0, 0.15);
-  --aurora-3: rgba(0, 0, 0, 0.12);
-  --btn-grad: linear-gradient(135deg, #3a3a3a, #2a2a2a 34%, #141414 68%, #000000);
-  --btn-shadow: 0 10px 34px -10px rgba(0, 0, 0, 0.4);
-  --focus-ring: rgba(0, 0, 0, 0.16);
+  --glow: 0 0 0 1px rgba(75, 122, 18, 0.22), 0 18px 50px -14px rgba(75, 122, 18, 0.3);
+  --meter: linear-gradient(90deg, #7fb733, #3f6b0d);
+  --aurora-1: rgba(121, 181, 32, 0.4);
+  --aurora-2: rgba(75, 122, 18, 0.3);
+  --aurora-3: rgba(53, 96, 13, 0.24);
+  --btn-grad: linear-gradient(135deg, #4d7a12, #3f6b0d 50%, #2c5108);
+  --btn-shadow: 0 10px 30px -12px rgba(75, 122, 18, 0.5);
+  --focus-ring: rgba(75, 122, 18, 0.22);
 
   color-scheme: light;
 }
@@ -692,4 +686,23 @@ body {
 
 .pool-row:hover td {
   background: color-mix(in srgb, var(--gold) 6%, transparent);
+}
+
+/* ---------- Beta tag ------------------------------------------------------- */
+
+.beta-tag {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 5px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent);
+  text-transform: uppercase;
+  flex-shrink: 0;
+  transform: translateY(-1px);
+  user-select: none;
 }

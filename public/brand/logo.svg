@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="face" x1="162" y1="84" x2="162" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f5c542" stop-opacity=".28"/>
+      <stop offset="100%" stop-color="#a8701a" stop-opacity=".05"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="162" y1="76" x2="162" y2="308" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#fff8e6"/>
+      <stop offset="50%"  stop-color="#f5c542"/>
+      <stop offset="100%" stop-color="#b8801e"/>
+    </linearGradient>
+    <radialGradient id="vig" cx="46%" cy="40%" r="68%">
+      <stop offset="0%"   stop-color="#1b1408"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="400" height="400" fill="url(#vig)"/>
+
+  <!-- Incoming white beam, stopping at the prism face. -->
+  <path d="M30 192 H116" stroke="#f7f0dd" stroke-width="17" stroke-linecap="round" opacity=".92"/>
+
+  <!-- Prism, scaled to fill the circular crop rather than float inside it. -->
+  <path d="M162 84 L252 300 H72 Z" fill="url(#face)" stroke="url(#edge)"
+        stroke-width="17" stroke-linejoin="round"/>
+
+  <!-- Refracted fan. Bands leave the prism's right edge and stop inside r=175
+       of centre, so none of them is cut when X masks the avatar to a circle. -->
+  <g stroke-width="17" stroke-linecap="round">
+    <path d="M200 175 L356 128" stroke="#fff8e6"/>
+    <path d="M205 196 L364 170" stroke="#ffd976"/>
+    <path d="M210 218 L366 216" stroke="#f5c542"/>
+    <path d="M215 240 L356 262" stroke="#c98f22"/>
+  </g>
+</svg>

@@ -170,15 +170,34 @@ export async function GET(
           ).catch(() => []),
         );
         const logs = (await runPool(tasks, 3)).flat();
-        const buckets = new Map<number, number>();
-        for (const l of logs) {
-          const b = Number(BigInt(l.blockNumber));
-          const key = Math.floor(b / 2000) * 2000;
-          buckets.set(key, (buckets.get(key) ?? 0) + 1);
+
+        if (logs.length > 0) {
+          // Bucket width is derived from the token's own span, not fixed. A
+          // token minted minutes ago covers far less than one 2000-block
+          // bucket, so a fixed width collapsed its whole life into a single
+          // bar — which rendered as one solid slab rather than a chart.
+          const blocks = logs.map((l) => Number(BigInt(l.blockNumber)));
+          const lo = Math.min(...blocks);
+          const hi = Math.max(...blocks);
+          const TARGET_BARS = 40;
+          const width = Math.max(1, Math.ceil((hi - lo + 1) / TARGET_BARS));
+
+          const buckets = new Map<number, number>();
+          for (const b of blocks) {
+            const key = lo + Math.floor((b - lo) / width) * width;
+            buckets.set(key, (buckets.get(key) ?? 0) + 1);
+          }
+
+          // Emit empty buckets too: gaps in trading are information, and a
+          // dense run of bars reads as activity only if quiet stretches show.
+          for (let k = lo; k <= hi; k += width) {
+            if (!buckets.has(k)) buckets.set(k, 0);
+          }
+
+          curveActivity = [...buckets.entries()]
+            .sort((a, b) => a[0] - b[0])
+            .map(([block, count]) => ({ t: at(block), block, count }));
         }
-        curveActivity = [...buckets.entries()]
-          .sort((a, b) => a[0] - b[0])
-          .map(([block, count]) => ({ t: at(block), block, count }));
       }
 
       const ethUsd = await getEthUsd();

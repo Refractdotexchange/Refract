@@ -29,6 +29,8 @@ type TokenData = {
   fdvUsd: number | null;
   liquidityEth: number;
   ethUsd: number | null;
+  logoUrl: string | null;
+  description: string | null;
 };
 
 type History = {
@@ -108,7 +110,7 @@ export function TokenDetail({ address }: { address: string }) {
     <>
       <div className="panel panel-lit" style={{ padding: 24 }}>
         <div className="stack-sm" style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <TokenAvatar address={data.address} symbol={data.symbol} size={58} />
+          <TokenAvatar address={data.address} symbol={data.symbol} size={58} logoUrl={data.logoUrl} />
           <div style={{ flex: 1, minWidth: 200 }}>
             <h1 className="font-display wrap-anywhere" style={{ fontSize: 30, fontWeight: 700, margin: 0, letterSpacing: "-0.03em" }}>
               <SafeText value={data.symbol} />
@@ -116,6 +118,16 @@ export function TokenDetail({ address }: { address: string }) {
             <div className="wrap-anywhere" style={{ color: "var(--muted)", fontSize: 14.5, marginTop: 3 }}>
               <SafeText value={data.name} />
             </div>
+            {data.description && data.description !== data.name && (
+              // The deployer's own blurb, straight off the contract. Runs
+              // through SafeText like every other on-chain string.
+              <div
+                className="wrap-anywhere"
+                style={{ color: "var(--faint)", fontSize: 13, marginTop: 6, maxWidth: 560 }}
+              >
+                <SafeText value={data.description} />
+              </div>
+            )}
           </div>
           <div style={{ textAlign: "right" }}>
             <div className="kicker">Price</div>

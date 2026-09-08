@@ -514,7 +514,7 @@ function Pane({
           className="btn"
           style={{ flexShrink: 0, padding: "9px 12px", fontSize: 15, fontWeight: 700, background: "var(--surface)" }}
         >
-          <TokenAvatar address={token.address} symbol={token.symbol} size={22} />
+          <TokenAvatar address={token.address} symbol={token.symbol} size={22} logoUrl={token.logoUrl} />
           {token.symbol}
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 9l6 6 6-6" />

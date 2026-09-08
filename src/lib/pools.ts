@@ -1,6 +1,7 @@
 import { getAddress, pad, type Address, type Hex } from "viem";
 import { CONTRACTS, serverClient } from "./chain";
-import { LAUNCH_EVENT_TOPIC, TRANSFER_TOPIC, erc20Abi, multicall3Abi } from "./abi";
+import { LAUNCH_EVENT_TOPIC, TRANSFER_TOPIC, erc20Abi, launchTokenAbi, multicall3Abi } from "./abi";
+import { hydrateLogos, toHttpUrl } from "./logo";
 import {
   cached,
   getRawLogs,
@@ -39,6 +40,8 @@ export type Pool = {
   lastActiveBlock: number;
   trades: number;
   explorerUrl: string;
+  /** Token art from the contract's own `logo()`, resolved to an http URL. */
+  logoUrl: string | null;
 };
 
 /** Scan the launchpad factory for new-token events over a window of blocks. */
@@ -314,6 +317,7 @@ export async function getPools(windowBlocks = 25_000): Promise<{
           functionName: "balanceOf",
           args: [info.curve],
         } as const,
+        { address: token as Address, abi: launchTokenAbi, functionName: "logo" } as const,
       ]);
 
       // Native reserve held by each curve. Multicall3 exposes getEthBalance, so
@@ -361,12 +365,13 @@ export async function getPools(windowBlocks = 25_000): Promise<{
       });
 
       const pools: Pool[] = entries.map(([token, info], i) => {
-        const base = i * 5;
+        const base = i * 6;
         const nameRes = meta[base];
         const symbolRes = meta[base + 1];
         const decimalsRes = meta[base + 2];
         const supplyRes = meta[base + 3];
         const reserveRes = meta[base + 4];
+        const logoRes = meta[base + 5];
 
         const decimals =
           decimalsRes.status === "success" ? Number(decimalsRes.result) : 18;
@@ -426,6 +431,7 @@ export async function getPools(windowBlocks = 25_000): Promise<{
           lastActiveBlock: act?.lastBlock ?? launchBlock,
           trades: act?.trades ?? 0,
           explorerUrl: `https://robinhoodchain.blockscout.com/token/${token}`,
+          logoUrl: logoRes?.status === "success" ? toHttpUrl(logoRes.result) : null,
         };
       });
 
@@ -435,6 +441,10 @@ export async function getPools(windowBlocks = 25_000): Promise<{
       );
 
       usable.sort((a, b) => b.launchBlock - a.launchBlock);
+
+      // Follow any logo() values that turned out to be metadata documents.
+      // Cached by CID, so this costs nothing after the first scan.
+      await hydrateLogos(usable);
 
       return {
         pools: usable,

@@ -60,7 +60,7 @@ export function PoolTable({
                       minWidth: 0,
                     }}
                   >
-                    <TokenAvatar address={p.token} symbol={p.symbol} size={28} />
+                    <TokenAvatar address={p.token} symbol={p.symbol} size={28} logoUrl={p.logoUrl} />
                     <span style={{ minWidth: 0 }}>
                       <span
                         className="clip-text"

@@ -3,6 +3,7 @@ import { isAddress, getAddress, zeroAddress, type Address } from "viem";
 import { CONTRACTS, V3_FEE_TIERS, serverClient } from "@/lib/chain";
 import {
   erc20Abi,
+  launchTokenAbi,
   uniswapV2FactoryAbi,
   uniswapV2PairAbi,
   uniswapV3FactoryAbi,
@@ -10,6 +11,7 @@ import {
 } from "@/lib/abi";
 import { cached, withRetry } from "@/lib/rpc";
 import { getEthUsd } from "@/lib/quote";
+import { resolveTokenLogo } from "@/lib/logo";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -44,6 +46,9 @@ export async function GET(
             { address: token, abi: erc20Abi, functionName: "symbol" },
             { address: token, abi: erc20Abi, functionName: "decimals" },
             { address: token, abi: erc20Abi, functionName: "totalSupply" },
+            // Launchpad art. Not ERC-20, so this entry is allowed to revert.
+            { address: token, abi: launchTokenAbi, functionName: "logo" },
+            { address: token, abi: launchTokenAbi, functionName: "description" },
           ],
         }),
       );
@@ -174,6 +179,11 @@ export async function GET(
         address: token,
         name: meta[0].status === "success" ? String(meta[0].result) : "Unknown token",
         symbol: meta[1].status === "success" ? String(meta[1].result) : "???",
+        logoUrl: meta[4]?.status === "success" ? await resolveTokenLogo(meta[4].result) : null,
+        description:
+          meta[5]?.status === "success" && String(meta[5].result).trim()
+            ? String(meta[5].result).trim()
+            : null,
         decimals,
         totalSupply: totalSupply.toString(),
         supplyFormatted: supply,

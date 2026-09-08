@@ -82,6 +82,9 @@ export function TokenSelect({
             symbol: d.symbol,
             name: d.name,
             decimals: d.decimals,
+            // Carried through so an imported token keeps its art in the
+            // picker, the swap card and everywhere else it is rendered.
+            logoUrl: d.logoUrl ?? null,
           });
         }
       })
@@ -155,7 +158,7 @@ export function TokenSelect({
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "12px 0 4px" }}>
           {BASE_TOKENS.map((t) => (
             <button key={t.address} className="chip" onClick={() => { onSelect(t); onClose(); }}>
-              <TokenAvatar address={t.address} symbol={t.symbol} size={16} />
+              <TokenAvatar address={t.address} symbol={t.symbol} size={16} logoUrl={t.logoUrl} />
               {t.symbol}
             </button>
           ))}
@@ -176,7 +179,7 @@ export function TokenSelect({
 
           {lookup && (
             <div className="panel-flat" style={{ padding: 12, marginBottom: 8, display: "flex", alignItems: "center", gap: 12 }}>
-              <TokenAvatar address={lookup.address} symbol={lookup.symbol} size={34} />
+              <TokenAvatar address={lookup.address} symbol={lookup.symbol} size={34} logoUrl={lookup.logoUrl} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="clip-text" style={{ fontWeight: 650, fontSize: 14 }}>
                   <SafeText value={lookup.name} />
@@ -212,7 +215,7 @@ export function TokenSelect({
               onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-2)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
             >
-              <TokenAvatar address={t.address} symbol={t.symbol} size={32} />
+              <TokenAvatar address={t.address} symbol={t.symbol} size={32} logoUrl={t.logoUrl} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="clip-text" style={{ fontWeight: 600, fontSize: 14 }}>
                   <SafeText value={t.name} />
