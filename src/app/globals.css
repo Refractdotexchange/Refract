@@ -1,0 +1,695 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   REFRACT design system — monochrome
+   Identity: a pure black ground (pure white in light mode) and a refraction
+   ramp built from luminance alone. No hue anywhere, so the refract splits light
+   into greys rather than colours. Deliberately distinct from the olive/lime
+   and cream/serif looks common to this category.
+
+   One consequence worth knowing: gain and loss can no longer differ by hue.
+   --olive (positive) and --ember (negative) are separated by luminance only,
+   so the +/- sign carries the meaning. Anywhere a number's direction matters,
+   keep the sign visible — do not rely on the colour alone.
+   ========================================================================== */
+
+:root {
+  /* Pure black ground. Every surface above it is a step of neutral grey —
+     no hue anywhere, so the spectrum reads as luminance alone. */
+  --bg: #000000;
+  --bg-2: #0c0c0c;
+  --surface: #1a1a1a;
+  --surface-2: #242424;
+  --surface-3: #333333;
+  --line: rgba(255, 255, 255, 0.24);
+  --line-soft: rgba(255, 255, 255, 0.12);
+  --text: #fafafa;
+  --muted: #b4b4b4;
+  --faint: #808080;
+
+  /* The refraction ramp, light to deep. Formerly the gold family; the names
+     are kept so every downstream rule follows without edits. */
+  --champagne: #ffffff;
+  --honey: #e4e4e4;
+  --gold: #c9c9c9;
+  --brass: #9c9c9c;
+  --bronze: #6d6d6d;
+
+  /* Positive and negative can no longer differ by hue, so they differ by
+     luminance: gains sit at full white, losses at mid grey. The sign glyph
+     carries the meaning — see the note in README. */
+  --olive: #ffffff;
+  --ember: #8f8f8f;
+
+  --accent: var(--gold);
+  --accent-ink: #000000;
+  --spectrum: linear-gradient(
+    90deg,
+    #ffffff 0%,
+    #ededed 16%,
+    #d6d6d6 36%,
+    #b8b8b8 56%,
+    #909090 76%,
+    #5e5e5e 100%
+  );
+  --glow: 0 0 0 1px rgba(255, 255, 255, 0.32), 0 18px 60px -12px rgba(255, 255, 255, 0.22);
+
+  /* Progress fills need their own ramp. The brand spectrum bottoms out at
+     #5e5e5e, which is within a few points of the --surface-3 track, so a bar
+     using it loses its whole right-hand half. This one stays clear of it. */
+  --meter: linear-gradient(90deg, #ffffff, #cfcfcf);
+
+  /* Backdrop and control paints, themed here so the rules below stay neutral. */
+  --aurora-1: rgba(255, 255, 255, 0.4);
+  --aurora-2: rgba(255, 255, 255, 0.3);
+  --aurora-3: rgba(255, 255, 255, 0.26);
+  --btn-grad: linear-gradient(135deg, #ffffff, #ebebeb 34%, #cfcfcf 68%, #b0b0b0);
+  --btn-shadow: 0 10px 34px -10px rgba(255, 255, 255, 0.3);
+  --focus-ring: rgba(255, 255, 255, 0.16);
+
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  /* Pure white ground with the ramp inverted, so contrast holds both ways. */
+  --bg: #ffffff;
+  --bg-2: #f0f0f0;
+  --surface: #ffffff;
+  --surface-2: #f0f0f0;
+  --surface-3: #dedede;
+  --line: rgba(0, 0, 0, 0.2);
+  --line-soft: rgba(0, 0, 0, 0.1);
+  --text: #0a0a0a;
+  --muted: #4f4f4f;
+  --faint: #7a7a7a;
+
+  --champagne: #6e6e6e;
+  --honey: #4f4f4f;
+  --gold: #1c1c1c;
+  --brass: #383838;
+  --bronze: #000000;
+
+  --olive: #000000;
+  --ember: #7a7a7a;
+
+  --accent: var(--gold);
+  --accent-ink: #ffffff;
+  --spectrum: linear-gradient(
+    90deg,
+    #000000 0%,
+    #2b2b2b 16%,
+    #4a4a4a 36%,
+    #6b6b6b 56%,
+    #909090 76%,
+    #bdbdbd 100%
+  );
+  --glow: 0 0 0 1px rgba(0, 0, 0, 0.18), 0 18px 50px -14px rgba(0, 0, 0, 0.22);
+
+  --meter: linear-gradient(90deg, #000000, #454545);
+
+  --aurora-1: rgba(0, 0, 0, 0.2);
+  --aurora-2: rgba(0, 0, 0, 0.15);
+  --aurora-3: rgba(0, 0, 0, 0.12);
+  --btn-grad: linear-gradient(135deg, #3a3a3a, #2a2a2a 34%, #141414 68%, #000000);
+  --btn-shadow: 0 10px 34px -10px rgba(0, 0, 0, 0.4);
+  --focus-ring: rgba(0, 0, 0, 0.16);
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--gold) 32%, transparent);
+  color: var(--text);
+}
+
+.font-display {
+  font-family: var(--font-space-grotesk), var(--font-inter), sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.font-mono,
+.mono {
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ---------- Aurora backdrop ------------------------------------------------ */
+
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+  will-change: transform;
+}
+
+:root[data-theme="light"] .aurora-blob {
+  opacity: 0.22;
+}
+
+.aurora-a {
+  width: 720px;
+  height: 720px;
+  top: -280px;
+  left: -180px;
+  background: radial-gradient(circle, var(--aurora-1), transparent 68%);
+  animation: drift-a 26s ease-in-out infinite alternate;
+}
+
+.aurora-b {
+  width: 620px;
+  height: 620px;
+  top: -140px;
+  right: -160px;
+  background: radial-gradient(circle, var(--aurora-2), transparent 68%);
+  animation: drift-b 32s ease-in-out infinite alternate;
+}
+
+.aurora-c {
+  width: 560px;
+  height: 560px;
+  bottom: -260px;
+  left: 38%;
+  background: radial-gradient(circle, var(--aurora-3), transparent 70%);
+  animation: drift-c 38s ease-in-out infinite alternate;
+}
+
+@keyframes drift-a {
+  to {
+    transform: translate3d(140px, 90px, 0) scale(1.15);
+  }
+}
+@keyframes drift-b {
+  to {
+    transform: translate3d(-130px, 120px, 0) scale(1.1);
+  }
+}
+@keyframes drift-c {
+  to {
+    transform: translate3d(90px, -110px, 0) scale(1.2);
+  }
+}
+
+/* Fine grid overlay gives the dark ground some structure. */
+.grid-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: linear-gradient(var(--line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 78%);
+}
+
+/* ---------- Surfaces ------------------------------------------------------- */
+
+.panel {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.panel-flat {
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+}
+
+/* A 1px gradient hairline that reads as refracted light on the card edge. */
+.panel-lit {
+  position: relative;
+}
+.panel-lit::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--champagne) 55%, transparent),
+    color-mix(in srgb, var(--brass) 26%, transparent) 40%,
+    transparent 65%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.hairline {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+}
+
+/* ---------- Controls ------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s, color 0.15s;
+}
+.btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* A faded gold gradient turns muddy olive on the dark ground; use a flat,
+   clearly-inert surface instead. */
+.btn-primary:disabled {
+  opacity: 1;
+  background: var(--surface-2);
+  color: var(--faint);
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+}
+
+.btn-primary {
+  border: 0;
+  color: var(--accent-ink);
+  background: var(--btn-grad);
+  box-shadow: var(--btn-shadow);
+  font-weight: 700;
+}
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08) saturate(1.05);
+  background: var(--btn-grad);
+}
+
+.btn-lg {
+  padding: 15px 22px;
+  font-size: 16px;
+  border-radius: var(--r-md);
+  width: 100%;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted);
+}
+.btn-ghost:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  color: var(--text);
+  padding: 12px 14px;
+  font: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input:focus {
+  border-color: color-mix(in srgb, var(--gold) 60%, transparent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.input::placeholder {
+  color: var(--faint);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.chip:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+}
+.chip[data-on="true"] {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--gold) 70%, transparent);
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+}
+
+.kicker {
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* Gradient text used sparingly on headline fragments. */
+.spectrum-text {
+  background: var(--spectrum);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.spectrum-rule {
+  height: 2px;
+  border-radius: 2px;
+  background: var(--spectrum);
+}
+
+/* ---------- Motion --------------------------------------------------------- */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes shimmer {
+  100% {
+    background-position: 200% 0;
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes beam-travel {
+  0% {
+    stroke-dashoffset: 240;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.rise {
+  animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--olive);
+  box-shadow: 0 0 10px var(--olive);
+  animation: pulse-soft 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--surface-3) 50%,
+    var(--surface-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: var(--r-sm);
+}
+
+.spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ---------- Scrollbars ----------------------------------------------------- */
+
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 999px;
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--gold) 45%, var(--surface-3));
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------- Layout responsiveness ------------------------------------------ */
+
+.hero-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 470px);
+}
+
+@media (max-width: 1000px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 34px !important;
+  }
+  .hero-grid > div:last-child > div:first-child {
+    display: none; /* hide the decorative beam once it would overlap */
+  }
+}
+
+.pool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.three-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+@media (max-width: 640px) {
+  .stack-sm {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
+
+/* ---------- Navigation ------------------------------------------------------ */
+
+/* flex children default to min-width:auto, which let the nav set a ~730px floor
+   for the whole page and pushed every layout off-screen on phones. */
+.nav-links {
+  display: flex;
+  gap: 4px;
+  margin-left: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav-links::-webkit-scrollbar {
+  display: none;
+}
+
+.brand-word {
+  display: inline;
+}
+
+.connect-short {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .brand-word {
+    display: none;
+  }
+  .nav-chip {
+    display: none;
+  }
+  .nav-wrap {
+    padding: 11px 14px !important;
+    gap: 10px !important;
+  }
+  .connect-long {
+    display: none;
+  }
+  .connect-short {
+    display: inline;
+  }
+}
+
+/* Below ~760px five nav links cannot share a row with the wallet button without
+   truncating, so they move to their own scrollable row underneath. */
+@media (max-width: 760px) {
+  .nav-wrap {
+    flex-wrap: wrap;
+    row-gap: 8px !important;
+  }
+  .nav-links {
+    order: 3;
+    width: 100%;
+    flex: 1 0 100%;
+    gap: 6px !important;
+    margin-left: 0 !important;
+    padding-top: 9px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .nav-links a {
+    font-size: 13.5px !important;
+    padding: 7px 11px !important;
+  }
+}
+
+/* ---------- Small-screen typography and density ----------------------------- */
+
+@media (max-width: 640px) {
+  .page-pad {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+  .h-display {
+    font-size: clamp(27px, 8vw, 40px) !important;
+    line-height: 1.08 !important;
+  }
+  .lede {
+    font-size: 14.5px !important;
+  }
+  .panel,
+  .panel-flat {
+    border-radius: 16px;
+  }
+}
+
+/* Every long word in on-chain token metadata is attacker-controlled; never let
+   one of them widen the page. */
+.clip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.wrap-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* ---------- Safe-mode blur --------------------------------------------------- */
+
+.masked {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.masked-text {
+  filter: blur(5px);
+  opacity: 0.55;
+  user-select: none;
+  pointer-events: none;
+}
+.masked-reveal {
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  border: 1px solid var(--line-soft);
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 2px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.masked-reveal:hover {
+  color: var(--gold);
+  border-color: var(--line);
+}
+
+.pool-row:hover td {
+  background: color-mix(in srgb, var(--gold) 6%, transparent);
+}

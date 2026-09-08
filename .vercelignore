@@ -1,0 +1,4 @@
+.next
+node_modules
+# Separate Remotion project with its own package.json; not part of this build.
+video

@@ -1,0 +1,30 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# build output
+.next
+out
+build
+dist
+
+# environment
+.env
+.env*.local
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# deployment
+.vercel
+
+# editor / os
+.DS_Store
+.idea
+.vscode
+*.swp
+
+# separate Remotion project with its own toolchain; not part of this app
+video
