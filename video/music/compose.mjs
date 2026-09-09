@@ -237,6 +237,124 @@ function arp(mix, from, to, { gain = 0.1, step = BEAT / 2, chordEvery = 4 } = {}
 
 const ramp = (t, a, b, lo, hi) => (t <= a ? lo : t >= b ? hi : lo + ((t - a) / (b - a)) * (hi - lo));
 
+
+/* ---------- second-wave instruments --------------------------------------
+
+   The first four films share one arrangement. The next four each need their
+   own character, so these are the pieces that give each one a different
+   identity: a tension tick, an urgent two-note motif, a warm major arp and a
+   slow swell. Each cue below also carries its own progression rather than
+   using PROG.
+--------------------------------------------------------------------------- */
+
+/** Dry clock tick. Tension without melody. */
+function tick(mix, t, { gain = 0.09, pitch = 2400 } = {}) {
+  const len = samples(0.03);
+  const n = highpass(noise(len), pitch);
+  const env = expEnv(len, 0.007);
+  for (let i = 0; i < len; i++) n[i] *= env[i];
+  mix.add(n, t, { gain, send: 0.18 });
+}
+
+/** Two-note oscillating motif — reads as an alert without being a siren. */
+function alarmStab(mix, a, b, t, { gain = 0.15, step = 0.14, times = 4 } = {}) {
+  for (let i = 0; i < times; i++) {
+    const m = i % 2 === 0 ? a : b;
+    const dur = step * 0.85;
+    const len = samples(dur);
+    const v = saw(hz(m), dur, 2, 0.008);
+    const f = svfLowpass(v, 1900, 0.92);
+    const env = adsr(len, 0.004, 0.05, 0.3, 0.05);
+    for (let k = 0; k < len; k++) f[k] *= env[k];
+    mix.add(f, t + i * step, { gain: gain * (1 - i * 0.12), pan: i % 2 ? 0.25 : -0.25, send: 0.3 });
+  }
+}
+
+/** Bright major arpeggio — things clicking into place. */
+function warmArp(mix, midis, t, { gain = 0.13, step = 0.125, octave = true } = {}) {
+  midis.forEach((m, i) => {
+    const n = octave && i === midis.length - 1 ? m + 12 : m;
+    pluckNote(mix, n, t + i * step, { gain, pan: -0.4 + (i / Math.max(1, midis.length - 1)) * 0.8, dur: 1.1 });
+  });
+}
+
+/** Slow filter-opening swell. Weight and arrival. */
+function swell(mix, midis, t, dur, { gain = 0.2 } = {}) {
+  const len = samples(dur);
+  midis.forEach((m, i) => {
+    const v = saw(hz(m), dur, 4, 0.007 + i * 0.001);
+    const cut = new Float32Array(len);
+    for (let k = 0; k < len; k++) cut[k] = 220 + 2600 * Math.pow(k / len, 1.7);
+    const f = svfLowpass(v, cut, 0.6);
+    for (let k = 0; k < len; k++) f[k] *= Math.pow(k / len, 1.15);
+    mix.add(f, t, { gain: gain / midis.length, pan: -0.6 + (i / Math.max(1, midis.length - 1)) * 1.2, send: 0.7 });
+  });
+}
+
+/** Minimal bed: sub + pad from an explicit progression, no drums. */
+function quietBed(mix, prog, dur, { chordEvery = 5, padGain = 0.15, subGain = 0.42, open = 0.5 } = {}) {
+  for (let i = 0, t = 0; t < dur; i++, t += chordEvery) {
+    const c = prog[i % prog.length];
+    const span = Math.min(chordEvery + 1.0, dur - t);
+    pad(mix, c.pad, t, span, { gain: padGain, open });
+    sub(mix, c.sub, t, span, subGain);
+  }
+}
+
+/** Drums over an explicit progression, with the same staged entry as `bed`. */
+function drumBed(mix, prog, dur, density, { chordEvery = 4, padGain = 0.13, subGain = 0.38 } = {}) {
+  for (let i = 0, t = 0; t < dur; i++, t += chordEvery) {
+    const c = prog[i % prog.length];
+    const span = Math.min(chordEvery + 0.9, dur - t);
+    const d = density(t);
+    pad(mix, c.pad, t, span, { gain: padGain * (0.55 + 0.45 * d), open: 0.3 + 0.7 * d });
+    sub(mix, c.sub, t, span, subGain * (0.7 + 0.3 * d));
+  }
+  for (let b = 0, t = 0; t < dur; b++, t += BEAT) {
+    const d = density(t);
+    const inBar = b % 4;
+    const c = prog[Math.floor(t / chordEvery) % prog.length];
+    if (d >= 0.35) kick(mix, t, 0.6 * Math.min(1, 0.7 + d * 0.5));
+    if (d >= 0.75 && (inBar === 1 || inBar === 3)) clap(mix, t, 0.24 * d);
+    if (d >= 0.5) hat(mix, t + BEAT / 2, { gain: 0.07 * d, open: d >= 0.8 && inBar % 2 === 1, pan: 0.18 });
+    if (d >= 0.6 && c.root != null) bassNote(mix, c.root, t, BEAT * 0.9, { gain: 0.25 * d, bite: d });
+  }
+}
+
+/* ---------- per-film harmony --------------------------------------------- */
+
+// PRICE IMPACT — D minor with a flat-9 colour. Unsettled, then resolved.
+const PROG_IMPACT = [
+  { name: "Dm",      pad: [50, 57, 62, 65], sub: 26, root: 38 },
+  { name: "Dm(b9)",  pad: [50, 57, 63, 65], sub: 26, root: 38 },
+  { name: "Bbmaj7",  pad: [46, 53, 57, 65], sub: 22, root: 34 },
+  { name: "A7sus",   pad: [45, 52, 57, 62], sub: 21, root: 33 },
+];
+
+// CLONE GUARD — F# minor. Tight, alert, resolves to safety.
+const PROG_GUARD = [
+  { name: "F#m",     pad: [54, 61, 66, 69], sub: 30, root: 42 },
+  { name: "Dmaj7",   pad: [50, 57, 61, 66], sub: 26, root: 38 },
+  { name: "Bm7",     pad: [47, 54, 59, 66], sub: 23, root: 35 },
+  { name: "C#7sus",  pad: [49, 56, 61, 66], sub: 25, root: 37 },
+];
+
+// PORTFOLIO — C major. Warm, accumulating, satisfied.
+const PROG_FOLIO = [
+  { name: "Cmaj9",   pad: [48, 55, 59, 64, 67], sub: 24, root: 36, arp: [48, 55, 59, 64, 67] },
+  { name: "Am9",     pad: [45, 52, 57, 64, 67], sub: 21, root: 33, arp: [45, 52, 57, 64, 67] },
+  { name: "Fmaj9",   pad: [41, 53, 57, 60, 67], sub: 29, root: 41, arp: [41, 53, 57, 60, 64] },
+  { name: "G6/9",    pad: [43, 50, 59, 62, 66], sub: 31, root: 43, arp: [43, 50, 55, 59, 62] },
+];
+
+// SELF-CUSTODY — E minor. Slow, weighted, immovable.
+const PROG_CUSTODY = [
+  { name: "Em",      pad: [52, 59, 64, 67], sub: 28, root: 40 },
+  { name: "Cmaj7",   pad: [48, 55, 59, 64], sub: 24, root: 36 },
+  { name: "Am",      pad: [45, 52, 57, 64], sub: 21, root: 33 },
+  { name: "Bsus4",   pad: [47, 54, 59, 64], sub: 23, root: 35 },
+];
+
 const CUES = {
   /** MEET FACET — arrival, then warmth. */
   "refract-intro": (dur) => {
@@ -350,6 +468,121 @@ const CUES = {
     sub(mix, 38, END, dur - END, 0.44);
     return mix;
   },
+
+  /* ------------------------------------------------------------------------
+     Second wave. Each of these carries its own progression, tempo feel and
+     instrument set, so the four do not sound like variations of one track.
+  ------------------------------------------------------------------------ */
+
+  /** THE SIZE MOVES THE PRICE — D minor. Tension held, then released. */
+  "refract-price-impact": (dur) => {
+    const mix = new Mix(dur);
+    const SMALL = s(96), GROW = s(210), WARN = s(360), EASE = s(500), END = s(580);
+
+    quietBed(mix, PROG_IMPACT, dur, { chordEvery: 5.5, padGain: 0.15, subGain: 0.4, open: 0.34 });
+
+    // A clock under the small trade: steady, unhurried.
+    for (let t = SMALL; t < GROW; t += BEAT) tick(mix, t, { gain: 0.075 });
+    // As size grows the clock doubles and climbs.
+    for (let t = GROW, k = 0; t < WARN; t += BEAT / 2, k++) {
+      tick(mix, t, { gain: 0.06 + 0.05 * (k / 40), pitch: 2200 + k * 55 });
+    }
+
+    riser(mix, WARN - 2.0, 2.0, { gain: 0.22 });
+    impact(mix, WARN, { gain: 0.6, tone: 34 });
+    alarmStab(mix, 62, 61, WARN + 0.1, { gain: 0.16, step: 0.16, times: 4 });
+    pad(mix, PROG_IMPACT[1].pad, WARN, EASE - WARN, { gain: 0.19, open: 0.5 });
+    sub(mix, 26, WARN, EASE - WARN, 0.5);
+
+    // Resolution: the warning did its job, the trade gets smaller.
+    swell(mix, PROG_IMPACT[3].pad, EASE - 1.2, 2.4, { gain: 0.2 });
+    [69, 74, 77].forEach((m, i) => bell(mix, m, EASE + i * 0.16, { gain: 0.13, pan: -0.4 + i * 0.4, decay: 1.2 }));
+    impact(mix, END, { gain: 0.42, tone: 38 });
+    pad(mix, PROG_IMPACT[0].pad, END, dur - END + 0.6, { gain: 0.2, open: 0.9 });
+    sub(mix, 26, END, dur - END, 0.44);
+    return mix;
+  },
+
+  /** THREE TOKENS, ONE NAME — F# minor. Urgent, then safe. */
+  "refract-clone-guard": (dur) => {
+    const mix = new Mix(dur);
+    const SPOT = s(84), DUPES = s(150), FLAG = s(300), SAFE = s(430), END = s(520);
+
+    drumBed(mix, PROG_GUARD, dur, (t) => {
+      if (t < SPOT) return 0.2;
+      if (t < FLAG) return ramp(t, SPOT, FLAG, 0.45, 0.82);
+      if (t < SAFE) return 0.86;
+      return ramp(t, SAFE, SAFE + 3, 0.86, 0.5);
+    }, { chordEvery: 4, padGain: 0.13 });
+
+    whoosh(mix, SPOT - 0.6, 1.0, { gain: 0.18 });
+    // One stab per duplicate as it is spotted.
+    [0, 0.42, 0.84].forEach((o, i) => alarmStab(mix, 66, 65, DUPES + o, { gain: 0.15 - i * 0.02, step: 0.13, times: 2 }));
+
+    riser(mix, FLAG - 1.4, 1.4, { gain: 0.2 });
+    impact(mix, FLAG, { gain: 0.58, tone: 30 });
+    alarmStab(mix, 66, 65, FLAG + 0.08, { gain: 0.18, step: 0.15, times: 6 });
+
+    // The all-clear: the alert motif inverts into a resolving fourth.
+    swell(mix, PROG_GUARD[1].pad, SAFE - 1.0, 2.2, { gain: 0.21 });
+    [61, 66, 70, 73].forEach((m, i) => bell(mix, m, SAFE + i * 0.12, { gain: 0.14, pan: -0.5 + i * 0.33, decay: 1.1 }));
+    impact(mix, END, { gain: 0.4, tone: 42 });
+    pad(mix, PROG_GUARD[0].pad, END, dur - END + 0.6, { gain: 0.2, open: 0.95 });
+    sub(mix, 30, END, dur - END, 0.44);
+    return mix;
+  },
+
+  /** EVERYTHING YOU HOLD — C major. Warm, accumulating, resolved. */
+  "refract-portfolio": (dur) => {
+    const mix = new Mix(dur);
+    const SCAN = s(78), FOUND = s(168), STACK = s(300), TOTAL = s(430), END = s(520);
+
+    drumBed(mix, PROG_FOLIO, dur, (t) => {
+      if (t < SCAN) return 0.22;
+      if (t < STACK) return ramp(t, SCAN, STACK, 0.4, 0.72);
+      return ramp(t, STACK, TOTAL, 0.72, 0.9);
+    }, { chordEvery: 4, padGain: 0.14, subGain: 0.36 });
+
+    // Each found holding is one bright arpeggio.
+    [0, 0.9, 1.8, 2.7].forEach((o, i) => {
+      const c = PROG_FOLIO[i % PROG_FOLIO.length];
+      warmArp(mix, c.arp, FOUND + o, { gain: 0.12, step: 0.115 });
+    });
+
+    arp(mix, STACK, TOTAL, { gain: 0.075, step: BEAT / 2, chordEvery: 4 });
+    riser(mix, TOTAL - 1.2, 1.2, { gain: 0.16 });
+    impact(mix, TOTAL, { gain: 0.5, tone: 36 });
+    [72, 76, 79, 84].forEach((m, i) => bell(mix, m, TOTAL + i * 0.1, { gain: 0.13, pan: -0.45 + i * 0.3, decay: 1.3 }));
+    swell(mix, PROG_FOLIO[0].pad, END - 1.0, 2.0, { gain: 0.2 });
+    sub(mix, 24, END, dur - END, 0.44);
+    return mix;
+  },
+
+  /** YOUR KEYS, YOUR TRADE — E minor. Slow, weighted, immovable. */
+  "refract-self-custody": (dur) => {
+    const mix = new Mix(dur);
+    const LOCK = s(90), EXACT = s(210), SIGN = s(340), END = s(450);
+
+    // Deliberately sparse: half-time kick only, so the space reads as solidity.
+    quietBed(mix, PROG_CUSTODY, dur, { chordEvery: 5, padGain: 0.16, subGain: 0.46, open: 0.42 });
+    for (let t = LOCK, i = 0; t < END; t += BEAT * 2, i++) {
+      kick(mix, t, i % 2 === 0 ? 0.6 : 0.42);
+      if (t > EXACT) hat(mix, t + BEAT, { gain: 0.05, pan: 0.2 });
+    }
+
+    impact(mix, LOCK, { gain: 0.56, tone: 28 });
+    // The approval closing: two low, definite notes.
+    bassNote(mix, 40, EXACT, 0.8, { gain: 0.3, bite: 0.4 });
+    bassNote(mix, 35, EXACT + 0.9, 1.0, { gain: 0.28, bite: 0.4 });
+
+    swell(mix, PROG_CUSTODY[0].pad, SIGN - 1.4, 2.6, { gain: 0.22 });
+    impact(mix, SIGN, { gain: 0.5, tone: 33 });
+    [64, 67, 71].forEach((m, i) => bell(mix, m, SIGN + i * 0.18, { gain: 0.12, pan: -0.35 + i * 0.35, decay: 1.5 }));
+    impact(mix, END, { gain: 0.44, tone: 40 });
+    pad(mix, PROG_CUSTODY[0].pad, END, dur - END + 0.6, { gain: 0.21, open: 1 });
+    sub(mix, 28, END, dur - END, 0.46);
+    return mix;
+  },
 };
 
 /* ---------- render ------------------------------------------------------- */
@@ -360,6 +593,10 @@ const DURATIONS = {
   "refract-best-route": 840 / FPS,
   "refract-cashback": 570 / FPS,
   "refract-launch-pools": 570 / FPS,
+  "refract-price-impact": 660 / FPS,
+  "refract-clone-guard": 600 / FPS,
+  "refract-portfolio": 600 / FPS,
+  "refract-self-custody": 540 / FPS,
 };
 
 /** Integrated loudness, via ffmpeg's EBU R128 meter (which reports on stderr). */

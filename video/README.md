@@ -31,9 +31,17 @@ deterministic for the renderer.
 | id | length | what it says |
 | --- | --- | --- |
 | `Intro` | 12s | Mascot reveal. Beam in, Facet condenses out of it, spectrum out. Bumper. |
-| `BestRoute` | 26s | The route engine: one trade in, six venues probed, best route wins. |
+| `BestRoute` | 28s | The route engine: one trade in, six venues probed, best route wins. |
 | `Cashback` | 19s | 0.12% of routed volume back to the wallet that generated it. |
 | `LaunchPools` | 19s | Bonding-curve discovery, before a token graduates. |
+| `PriceImpact` | 22s | Why the quote gets worse as size grows, and when we warn. |
+| `CloneGuard` | 20s | Same name, same symbol, three contracts — check the address. |
+| `Portfolio` | 20s | Holdings found from transfer history, no token list needed. |
+| `SelfCustody` | 18s | Custody and exact-amount approvals. The slowest of the eight. |
+
+The first four share one arrangement in A minor at 120 BPM. The second four each
+carry their own progression, tempo feel and instrument set, so the set does not
+sound like variations of a single track.
 
 ## The music
 

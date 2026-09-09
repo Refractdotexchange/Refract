@@ -12,6 +12,10 @@ render Intro        intro
 render BestRoute    best-route
 render Cashback     cashback
 render LaunchPools  launch-pools
+render PriceImpact  price-impact
+render CloneGuard   clone-guard
+render Portfolio    portfolio
+render SelfCustody  self-custody
 
 echo
 echo "Done:"
