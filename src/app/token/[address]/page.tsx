@@ -19,7 +19,7 @@ export default async function TokenPage({
   params: Promise<{ address: string }>;
 }) {
   const { address } = await params;
-  if (!isAddress(address)) notFound();
+  if (!isAddress(address, { strict: false })) notFound();
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "34px 22px 0" }}>

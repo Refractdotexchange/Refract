@@ -167,7 +167,7 @@ export function PortfolioView() {
 
           <p className="mono" style={{ color: "var(--faint)", fontSize: 10.5, marginTop: 16, lineHeight: 1.7 }}>
             Scanned {compact(data.scannedBlocks, 0)} blocks · {data.tokensScanned} contracts touched.
-            Values are marks from the deepest pool, not quotes — thin pools will not fill at this
+            Values are marks from the deepest pool, not quotes. Thin pools will not fill at this
             price.
           </p>
         </>

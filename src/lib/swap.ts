@@ -162,3 +162,21 @@ const encodeUnwrapWeth = (amountMinimum: bigint, recipient: Address) =>
     functionName: "unwrapWETH9",
     args: [amountMinimum, recipient],
   });
+
+/**
+ * Native ETH to hold back when a user taps MAX, so the swap itself can still
+ * be paid for.
+ *
+ * Derived from live gas price rather than hardcoded: chain 4663 settles a swap
+ * for roughly 0.00005 ETH, so the previous flat 0.003 ETH reserve held back
+ * about 66x the actual cost and made MAX unusable on a small balance. The
+ * multiplier leaves generous headroom for an approval plus a price spike, and
+ * the floor covers the case where a node reports an implausibly low price.
+ */
+export function gasReserve(gasPrice: bigint): bigint {
+  const GAS_FOR_SWAP_PLUS_APPROVE = 400_000n;
+  const HEADROOM = 3n;
+  const FLOOR = 20_000_000_000_000n; // 0.00002 ETH
+  const estimate = gasPrice * GAS_FOR_SWAP_PLUS_APPROVE * HEADROOM;
+  return estimate > FLOOR ? estimate : FLOOR;
+}

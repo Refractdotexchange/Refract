@@ -177,7 +177,7 @@ export function RewardsTracker() {
                   style={{ marginTop: 16, padding: "11px 15px", fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6, textAlign: "left" }}
                 >
                   Balances accrue continuously and settle when the distributor contract goes live.
-                  Nothing is claimable yet — this figure is an audit of what your volume has earned,
+                  Nothing is claimable yet. This figure is an audit of what your volume has earned,
                   computed from the last {compact(data.scannedBlocks, 0)} blocks.
                 </div>
               </div>

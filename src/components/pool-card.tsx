@@ -93,7 +93,7 @@ export function PoolCard({
           {clones > 1 && (
             <span
               className="chip"
-              title={`${clones} tokens on this chain share this name and symbol — check the contract address before trading.`}
+              title={`${clones} tokens on this chain share this name and symbol. Check the contract address before trading.`}
               style={{
                 pointerEvents: "none",
                 fontSize: 9.5,

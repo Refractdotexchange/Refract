@@ -81,8 +81,8 @@ export function SafeModeToggle() {
       onClick={toggle}
       title={
         safeMode
-          ? "Safe mode on — explicit on-chain token names are blurred until you reveal them"
-          : "Safe mode off — token names render exactly as they are on-chain"
+          ? "Safe mode on. Explicit on-chain token names are blurred until you reveal them"
+          : "Safe mode off. Token names render exactly as they are on-chain"
       }
     >
       {safeMode ? "Safe mode" : "Raw names"}

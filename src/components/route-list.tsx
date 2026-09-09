@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatUnits } from "@/lib/format";
 import type { Route } from "@/lib/quote";
+import { CurveFallback } from "./curve-fallback";
 
 const PROTOCOL_COLOR: Record<Route["protocol"], string> = {
   "uniswap-v2": "var(--brass)",
@@ -21,9 +22,12 @@ export function RouteList({
   onPick,
   loading,
   hasAmount,
+  tokenOut,
 }: {
   routes: Route[];
   activeId: string | null;
+  /** Used to offer the bonding curve when no Uniswap route exists. */
+  tokenOut?: `0x${string}`;
   decimals: number;
   symbol: string;
   onPick: (id: string) => void;
@@ -45,9 +49,13 @@ export function RouteList({
 
   if (routes.length === 0) {
     return (
-      <div className="panel-flat" style={{ padding: "12px 15px", marginTop: 10, fontSize: 13, color: "var(--muted)" }}>
-        No on-chain route found for this pair.
-      </div>
+      <>
+        <div className="panel-flat" style={{ padding: "12px 15px", marginTop: 10, fontSize: 13, color: "var(--muted)" }}>
+          No on-chain route found for this pair.
+        </div>
+        {/* A pre-graduation token has no pool but is still buyable on its curve. */}
+        {tokenOut && <CurveFallback token={tokenOut} symbol={symbol} />}
+      </>
     );
   }
 

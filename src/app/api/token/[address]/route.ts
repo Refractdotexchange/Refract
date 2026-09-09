@@ -30,7 +30,7 @@ export async function GET(
   { params }: { params: Promise<{ address: string }> },
 ) {
   const { address: raw } = await params;
-  if (!isAddress(raw)) {
+  if (!isAddress(raw, { strict: false })) {
     return NextResponse.json({ error: "Not a valid contract address" }, { status: 400 });
   }
   const token = getAddress(raw);
@@ -203,7 +203,10 @@ export async function GET(
         { status: 404 },
       );
     }
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      // Token metadata barely changes; price fields refresh on the shorter window.
+      headers: { "cache-control": "public, s-maxage=30, stale-while-revalidate=300" },
+    });
   } catch (err) {
     return NextResponse.json({ error: String(err).slice(0, 200) }, { status: 502 });
   }

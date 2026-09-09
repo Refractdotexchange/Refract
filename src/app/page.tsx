@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { SwapDeepLink } from "@/components/swap-deeplink";
 import { SwapCard } from "@/components/swap-card";
 import { StatTicker } from "@/components/stat-ticker";
 import { FreshLaunches } from "@/components/fresh-launches";
@@ -47,8 +49,8 @@ export default function SwapPage() {
               margin: "20px 0 28px",
             }}
           >
-            REFRACT splits your swap across every venue deployed on chain 4663 — Uniswap V2, all four
-            V3 fee tiers, and fresh bonding-curve launches — then routes it through the one that
+            REFRACT splits your swap across every venue deployed on chain 4663: Uniswap V2, all four
+            V3 fee tiers, and fresh bonding-curve launches, then routes it through the one that
             pays out most. Non-custodial, signed in your own wallet, and a slice of every fee comes
             back to you.
           </p>
@@ -80,7 +82,11 @@ export default function SwapPage() {
             }}
           />
           <div style={{ position: "relative", zIndex: 1 }}>
-            <SwapCard />
+            {/* Suspense because the deep-link reader uses useSearchParams;
+                the plain card renders meanwhile. */}
+            <Suspense fallback={<SwapCard />}>
+              <SwapDeepLink />
+            </Suspense>
           </div>
         </div>
       </section>

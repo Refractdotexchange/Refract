@@ -72,7 +72,7 @@ export function StatTicker() {
           className="mono"
           style={{ fontSize: 10.5, color: "var(--faint)", marginTop: 8, lineHeight: 1.5 }}
         >
-          Partial scan — the public RPC rate-limited some block ranges. Figures shown as “—” are
+          Partial scan. The public RPC rate-limited some block ranges. Figures shown as “—” are
           incomplete, not zero. Retrying automatically.
         </div>
       )}

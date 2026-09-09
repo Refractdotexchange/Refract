@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { TokenAvatar } from "./brand";
+import { CurveBuy } from "./curve-buy";
 import { SafeText } from "./safe-text";
 import { useToast } from "./toast";
 import { addressUrl, tokenUrl } from "@/lib/chain";
@@ -153,7 +154,7 @@ export function TokenDetail({ address }: { address: string }) {
           <a className="chip" href={tokenUrl(data.address)} target="_blank" rel="noreferrer">
             Explorer ↗
           </a>
-          <Link className="chip" href="/">
+          <Link className="chip" href={`/?buy=${data.address}`}>
             Swap this token →
           </Link>
         </div>
@@ -221,6 +222,14 @@ export function TokenDetail({ address }: { address: string }) {
         )}
       </section>
 
+      {/* Pre-graduation tokens have no Uniswap pool, so the curve is the only
+          place to buy them. Renders nothing once a token has graduated. */}
+      {data.venues.length === 0 && (
+        <section style={{ marginTop: 30 }}>
+          <CurveBuy token={data.address as `0x${string}`} symbol={data.symbol} />
+        </section>
+      )}
+
       <section style={{ marginTop: 30 }}>
         <h2 className="font-display" style={{ fontSize: 20, fontWeight: 700, margin: "0 0 13px" }}>
           Venues
@@ -229,7 +238,7 @@ export function TokenDetail({ address }: { address: string }) {
         {data.venues.length === 0 ? (
           <div className="panel" style={{ padding: 26, color: "var(--muted)", fontSize: 14, lineHeight: 1.6 }}>
             No Uniswap pool exists for this token yet. It is still trading on its launch bonding
-            curve — once it graduates, its pools will appear here.
+            curve. Once it graduates, its pools will appear here.
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -284,7 +293,7 @@ export function TokenDetail({ address }: { address: string }) {
       <p style={{ color: "var(--faint)", fontSize: 12, lineHeight: 1.65, marginTop: 26 }}>
         Prices come from the deepest pool holding this token, read from contract state at the head
         of chain 4663. Permissionless launch tokens can be minted, taxed or rugged by their
-        deployer — always read the contract before trading.
+        deployer. Always read the contract before trading.
       </p>
     </>
   );

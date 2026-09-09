@@ -8,6 +8,7 @@ A routing exchange and launch-pool explorer for **Robinhood Chain**.
 REFRACT quotes every venue on the chain for your pair and settles on whichever pays out most.
 
 [![Live](https://img.shields.io/badge/live-refract.exchange-a3e635?style=for-the-badge&labelColor=0a0a0a)](https://www.refract.exchange)
+[![X](https://img.shields.io/badge/%40RefractHq__-000?style=for-the-badge&logo=x&logoColor=a3e635&labelColor=0a0a0a)](https://x.com/RefractHq_)
 [![Chain](https://img.shields.io/badge/chain-4663-79b520?style=for-the-badge&labelColor=0a0a0a)](https://robinhoodchain.blockscout.com)
 [![License](https://img.shields.io/badge/license-MIT-c9f56e?style=for-the-badge&labelColor=0a0a0a)](LICENSE)
 
@@ -15,7 +16,10 @@ REFRACT quotes every venue on the chain for your pair and settles on whichever p
 [Pools](https://www.refract.exchange/pools) &nbsp;·&nbsp;
 [Portfolio](https://www.refract.exchange/portfolio) &nbsp;·&nbsp;
 [Rewards](https://www.refract.exchange/rewards) &nbsp;·&nbsp;
-[How it works](https://www.refract.exchange/engine)
+[How it works](https://www.refract.exchange/engine) &nbsp;·&nbsp;
+[**@RefractHq_**](https://x.com/RefractHq_)
+
+`REFRACT` &nbsp;·&nbsp; `0xBfA6B87E293A4668b86Ee33E80Ff168266781400`
 
 </div>
 
@@ -171,7 +175,7 @@ REFRACT is non-custodial. It never takes custody of funds — every trade is sig
 wallet, approvals are scoped to the exact amount of each swap, and the routers are the canonical
 Uniswap deployments on chain 4663.
 
-Found something? Open an issue, or reach us at [@Refractexchange](https://x.com/Refractexchange).
+Found something? Open an issue, or reach us on X at [@RefractHq_](https://x.com/RefractHq_).
 
 ## Disclaimer
 

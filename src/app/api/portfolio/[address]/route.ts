@@ -35,7 +35,7 @@ export async function GET(
   { params }: { params: Promise<{ address: string }> },
 ) {
   const { address: raw } = await params;
-  if (!isAddress(raw)) {
+  if (!isAddress(raw, { strict: false })) {
     return NextResponse.json({ error: "Enter a valid 0x wallet address" }, { status: 400 });
   }
   const wallet = getAddress(raw);
@@ -261,7 +261,10 @@ export async function GET(
       };
     });
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      // Public chain data keyed by address, so it is safe to share at the edge.
+      headers: { "cache-control": "public, s-maxage=15, stale-while-revalidate=60" },
+    });
   } catch (err) {
     return NextResponse.json(
       { error: "Could not load portfolio — try again.", detail: String(err).slice(0, 200) },

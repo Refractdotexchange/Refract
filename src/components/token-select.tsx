@@ -88,7 +88,7 @@ export function TokenSelect({
           });
         }
       })
-      .catch(() => !cancelled && setError("Lookup failed — check the address and try again."))
+      .catch(() => !cancelled && setError("Lookup failed. Check the address and try again."))
       .finally(() => !cancelled && setLooking(false));
 
     return () => {

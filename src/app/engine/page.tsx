@@ -14,13 +14,13 @@ const STEPS = [
     n: "01",
     title: "Split",
     tone: "var(--champagne)",
-    body: "Your order hits the router and fans out across every venue deployed on chain 4663 — the V2 pair, all four V3 fee tiers, and the WETH hop. Each is quoted against live contract state, not a cached index.",
+    body: "Your order hits the router and fans out across every venue deployed on chain 4663: the V2 pair, all four V3 fee tiers, and the WETH hop. Each is quoted against live contract state, not a cached index.",
   },
   {
     n: "02",
     title: "Compare",
     tone: "var(--honey)",
-    body: "Quotes come back ranked by output, with the loss against the best route shown for each. You can override the pick — the engine recommends, it never hides the alternatives.",
+    body: "Quotes come back ranked by output, with the loss against the best route shown for each. You can override the pick. The engine recommends, it never hides the alternatives.",
   },
   {
     n: "03",
@@ -32,14 +32,14 @@ const STEPS = [
     n: "04",
     title: "Return",
     tone: "var(--brass)",
-    body: "A slice of the routing fee is attributed back to the wallet that generated it, accruing at 0.12% of routed volume — auditable from your own on-chain swap history.",
+    body: "A slice of the routing fee is attributed back to the wallet that generated it, accruing at 0.12% of routed volume, auditable from your own on-chain swap history.",
   },
 ];
 
 const FAQ = [
   {
     q: "Where does the data come from?",
-    a: "Every figure on this site is read from Robinhood Chain (chain ID 4663) at request time — factory events for launch discovery, contract state for reserves and supply, and the Uniswap quoter for prices. No third-party price API sits in between.",
+    a: "Every figure on this site is read from Robinhood Chain (chain ID 4663) at request time: factory events for launch discovery, contract state for reserves and supply, and the Uniswap quoter for prices. No third-party price API sits in between.",
   },
   {
     q: "Does REFRACT hold my funds?",
@@ -65,7 +65,7 @@ export default function EnginePage() {
         </h1>
         <p style={{ color: "var(--muted)", fontSize: 16.5, lineHeight: 1.65, maxWidth: 580, margin: "16px auto 0" }}>
           One beam goes in. It gets split, measured, and the strongest band comes out the other
-          side — with a little colour sent back to whoever aimed it.
+          side, with a little colour sent back to whoever aimed it.
         </p>
       </section>
 

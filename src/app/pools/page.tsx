@@ -4,7 +4,7 @@ import { PoolsExplorer } from "@/components/pools-explorer";
 export const metadata: Metadata = {
   title: "Launch pools",
   description:
-    "Every bonding-curve launch on Robinhood Chain, read live from the chain — sortable by liquidity, activity, curve progress and age.",
+    "Every bonding-curve launch on Robinhood Chain, read live from the chain, sortable by liquidity, activity, curve progress and age.",
 };
 
 export default function PoolsPage() {
@@ -20,7 +20,7 @@ export default function PoolsPage() {
         </h1>
         <p style={{ color: "var(--muted)", fontSize: 15.5, lineHeight: 1.6, maxWidth: 620, marginTop: 12 }}>
           Every token minted onto a bonding curve, discovered directly from launchpad factory
-          events. Reserves, supply and curve progress are read from the contracts themselves — no
+          events. Reserves, supply and curve progress are read from the contracts themselves. No
           third-party index sits in between.
         </p>
       </div>

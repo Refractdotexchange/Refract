@@ -22,17 +22,26 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "REFRACT — Split every swap into its best route",
+    default: "REFRACT · Split every swap into its best route",
     template: "%s · REFRACT",
   },
   description:
     "A routing exchange for Robinhood Chain. Compare every venue on chain 4663, trade from your own wallet, and track launch pools the moment they go live.",
   openGraph: {
-    title: "REFRACT — Split every swap into its best route",
+    title: "REFRACT · Split every swap into its best route",
     description:
       "Compare every venue on Robinhood Chain, trade from your own wallet, and track launch pools live.",
     siteName: "REFRACT",
     type: "website",
+  },
+  // Attributes the link card to the account when the site is shared on X.
+  twitter: {
+    card: "summary",
+    site: "@RefractHq_",
+    creator: "@RefractHq_",
+    title: "REFRACT · Split every swap into its best route",
+    description:
+      "Compare every venue on Robinhood Chain, trade from your own wallet, and track launch pools live.",
   },
 };
 

@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ address: string }> },
 ) {
   const { address } = await params;
-  if (!isAddress(address)) {
+  if (!isAddress(address, { strict: false })) {
     return NextResponse.json({ error: "Enter a valid 0x wallet address" }, { status: 400 });
   }
 
@@ -22,7 +22,9 @@ export async function GET(
   );
 
   try {
-    return NextResponse.json(await getRewards(address as Address, windowBlocks));
+    return NextResponse.json(await getRewards(address as Address, windowBlocks), {
+      headers: { "cache-control": "public, s-maxage=15, stale-while-revalidate=60" },
+    });
   } catch (err) {
     return NextResponse.json(
       { error: "Could not load rewards — try again.", detail: String(err).slice(0, 200) },

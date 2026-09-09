@@ -172,7 +172,7 @@ export function PoolsExplorer() {
 
       {error && (
         <div className="panel" style={{ padding: 22, color: "var(--muted)", fontSize: 14, lineHeight: 1.6 }}>
-          {(error as Error).message} — the public RPC rate-limits bursts, so this usually clears on
+          {(error as Error).message}. The public RPC rate-limits bursts, so this usually clears on
           the next refresh.
         </div>
       )}
@@ -203,7 +203,7 @@ export function PoolsExplorer() {
               <div style={{ fontSize: 15, fontWeight: 600 }}>Scan was rate-limited</div>
               <div style={{ color: "var(--muted)", fontSize: 13.5, marginTop: 7, lineHeight: 1.6, maxWidth: 400, margin: "7px auto 0" }}>
                 The public RPC throttled this request, so the chain was not fully read. This is not
-                an empty result — retrying automatically.
+                an empty result. Retrying automatically.
               </div>
             </>
           ) : (

@@ -5,6 +5,15 @@ import { hashCode } from "@/lib/format";
  * literals so the mark inverts correctly between the black and white themes —
  * a hard-coded white mark would vanish on the light ground.
  */
+/**
+ * Route token art through our own proxy. Public IPFS gateways answer a plain
+ * server request but return 403 to browser User-Agents, so a direct <img> or
+ * background URL fails for every real visitor.
+ */
+function proxied(url: string): string {
+  return `/api/img?src=${encodeURIComponent(url)}`;
+}
+
 const SPECTRUM = [
   "var(--champagne)",
   "var(--honey)",
@@ -200,8 +209,17 @@ export function TokenAvatar({
         justifyContent: "center",
         position: "relative",
         overflow: "hidden",
-        background: `linear-gradient(${angle}deg, hsl(${hue} 74% ${light}%), hsl(${hue2} 66% ${light2}%))`,
-        color: "rgba(255,255,255,.94)",
+        // Two layers in one declaration: the token's own art on top, the
+        // generated gradient beneath it. A background-image that 404s or is
+        // refused paints nothing, so the gradient shows through — unlike an
+        // <img>, which paints a broken-image glyph on failure.
+        backgroundImage: logoUrl
+          ? `url("${proxied(logoUrl)}"), linear-gradient(${angle}deg, hsl(${hue} 74% ${light}%), hsl(${hue2} 66% ${light2}%))`
+          : `linear-gradient(${angle}deg, hsl(${hue} 74% ${light}%), hsl(${hue2} 66% ${light2}%))`,
+        backgroundSize: "cover, cover",
+        backgroundPosition: "center, center",
+        backgroundRepeat: "no-repeat, no-repeat",
+        color: logoUrl ? "transparent" : "rgba(255,255,255,.94)",
         fontSize: size * 0.36,
         fontWeight: 700,
         letterSpacing: "-0.02em",
@@ -211,27 +229,6 @@ export function TokenAvatar({
       }}
     >
       {letters}
-      {logoUrl ? (
-        // Layered over the generated avatar rather than replacing it. An
-        // <img> with an empty alt renders nothing when it fails, so a dead
-        // IPFS gateway leaves the fallback visible instead of a broken icon —
-        // and it needs no error handler, so this stays a server component.
-        <img
-          // eslint-disable-next-line @next/next/no-img-element
-          src={logoUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            borderRadius: "50%",
-          }}
-        />
-      ) : null}
     </span>
   );
 }

@@ -45,13 +45,23 @@ export async function followLogo(url: string): Promise<string | null> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 4000);
   try {
-    const res = await fetch(url, { signal: ctrl.signal, redirect: "follow" });
+    const res = await fetch(url, {
+      signal: ctrl.signal,
+      redirect: "follow",
+      headers: { accept: "application/json,image/*", "user-agent": "refract/1.0" },
+    });
     const type = res.headers.get("content-type") ?? "";
     if (!res.ok) {
-      out = null;
+      // A gateway refusing us here (403/429 from a shared egress IP) says
+      // nothing about whether the art exists. Keep the URL and let /api/img
+      // retry it across its own gateway list, rather than discarding a logo
+      // that other callers can still resolve.
+      out = url;
     } else if (type.includes("json") || type.includes("text/plain")) {
       const meta = (await res.json()) as { image?: unknown };
-      out = toHttpUrl(meta?.image) ?? null;
+      // If the document has no usable image, fall back to the original URL —
+      // /api/img will reject a non-image and the caller shows its fallback.
+      out = toHttpUrl(meta?.image) ?? url;
     } else {
       // Already an image. Drop the body instead of streaming a full-size
       // asset the server has no use for.

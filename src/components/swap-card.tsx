@@ -11,7 +11,7 @@ import { useQuote } from "@/hooks/use-quote";
 import { useTokenBalance } from "@/hooks/use-token-balance";
 import { formatUnits, parseUnits } from "@/lib/format";
 import { NATIVE_TOKEN, USDG_TOKEN, sameToken, type TokenInfo } from "@/lib/tokens";
-import { applySlippage, buildSwap } from "@/lib/swap";
+import { applySlippage, buildSwap, gasReserve } from "@/lib/swap";
 import { erc20Abi } from "@/lib/abi";
 import { txUrl } from "@/lib/chain";
 import { CASHBACK_BPS } from "@/lib/rewards";
@@ -19,15 +19,27 @@ import type { Route } from "@/lib/quote";
 
 const SLIPPAGE_PRESETS = [10, 50, 100, 300];
 
-export function SwapCard() {
+/**
+ * `buy` preselects the token to receive, so a link from a token page lands on
+ * a swap that is ready to go. Previously that link dropped the token entirely
+ * and left the user on the default ETH -> USDG pair, hunting for it by hand.
+ */
+export function SwapCard({ buy }: { buy?: TokenInfo | null } = {}) {
   const [tokenIn, setTokenIn] = useState<TokenInfo>(NATIVE_TOKEN);
-  const [tokenOut, setTokenOut] = useState<TokenInfo>(USDG_TOKEN);
+  const [tokenOut, setTokenOut] = useState<TokenInfo>(buy ?? USDG_TOKEN);
   const [amount, setAmount] = useState("");
   const [slippageBps, setSlippageBps] = useState(50);
   const [showSettings, setShowSettings] = useState(false);
   const [picking, setPicking] = useState<"in" | "out" | null>(null);
   const [chosenRouteId, setChosenRouteId] = useState<string | null>(null);
   const [busy, setBusy] = useState<null | "approving" | "swapping">(null);
+
+  // The token arrives after its metadata resolves, so adopt it when it lands.
+  useEffect(() => {
+    if (buy && !sameToken(buy, tokenOut)) setTokenOut(buy);
+    // Only react to the incoming token, not to the user's later edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buy?.address]);
 
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
@@ -77,9 +89,19 @@ export function SwapCard() {
     setAmount("");
   };
 
-  const setMax = () => {
-    // Leave a little native ETH behind for gas.
-    const reserve = tokenIn.native ? 3n * 10n ** 15n : 0n;
+  const setMax = async () => {
+    if (!tokenIn.native) {
+      setAmount(formatUnits(balanceIn.value, tokenIn.decimals, tokenIn.decimals));
+      return;
+    }
+    // Hold back only what the transaction will actually cost. A flat reserve
+    // was 66x the real gas price here and swallowed most of a small balance.
+    let reserve = gasReserve(230_000_000n); // fallback if the node is unreachable
+    try {
+      if (publicClient) reserve = gasReserve(await publicClient.getGasPrice());
+    } catch {
+      /* keep the fallback */
+    }
     const usable = balanceIn.value > reserve ? balanceIn.value - reserve : 0n;
     setAmount(formatUnits(usable, tokenIn.decimals, tokenIn.decimals));
   };
@@ -279,7 +301,8 @@ export function SwapCard() {
         />
 
         <RouteList
-          routes={routes}
+
+            tokenOut={tokenOut.address}          routes={routes}
           activeId={active?.id ?? null}
           decimals={tokenOut.decimals}
           symbol={tokenOut.symbol}
@@ -377,7 +400,7 @@ export function SwapCard() {
             <div style={{ fontSize: 12.5, lineHeight: 1.55, color: "var(--muted)" }}>
               This trade moves the price by{" "}
               <b style={{ color: "var(--ember)" }}>{(impactBps / 100).toFixed(1)}%</b>. The pool is
-              thin for this size — you are paying well above the going rate. Try a smaller amount.
+              thin for this size, so you are paying well above the going rate. Try a smaller amount.
             </div>
           </div>
         )}

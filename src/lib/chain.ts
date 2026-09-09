@@ -8,7 +8,37 @@ export const RPC_PRIMARY =
 export const RPC_FALLBACK =
   process.env.RPC_FALLBACK_URL ?? "https://robinhood-rpc.publicnode.com";
 
+/**
+ * Authenticated RPC used only by server code.
+ *
+ * Deliberately NOT prefixed NEXT_PUBLIC_: anything with that prefix is inlined
+ * into the browser bundle, so a keyed endpoint placed there would hand its API
+ * key to every visitor. All the heavy work (log scans, multicalls, quoting) is
+ * server-side, so the browser keeps using the public RPC and the key stays put.
+ */
+export const RPC_SERVER = process.env.RPC_SERVER_URL ?? RPC_PRIMARY;
+
 export const EXPLORER = "https://robinhoodchain.blockscout.com";
+
+/** Official accounts. Kept here so the nav, footer and card metadata agree. */
+export const SOCIALS = {
+  x: "https://x.com/RefractHq_",
+  xHandle: "@RefractHq_",
+  github: "https://github.com/Refractdotexchange/Refract",
+} as const;
+
+/**
+ * The project's own token, launched on Pons. Verified on chain 4663:
+ * name and symbol REFRACT, 18 decimals, 1B supply, curve
+ * 0x0790d8bd598b87aac18dfb8d708c2afd4d7b8196.
+ *
+ * Shown so people can check the contract they are buying rather than trusting
+ * an address pasted in a chat, which is how most launch scams land.
+ */
+export const PROJECT_TOKEN = {
+  address: "0xBfA6B87E293A4668b86Ee33E80Ff168266781400",
+  symbol: "REFRACT",
+} as const;
 
 export const robinhoodChain = defineChain({
   id: 4663,
@@ -54,7 +84,13 @@ export const V3_FEE_TIERS = [100, 500, 3000, 10000] as const;
 export const serverClient = createPublicClient({
   chain: robinhoodChain,
   transport: fallback(
-    [http(RPC_PRIMARY, { timeout: 12_000 }), http(RPC_FALLBACK, { timeout: 12_000 })],
+    [
+      // Authenticated endpoint first when one is configured; the public RPCs
+      // stay as failover so a missing or exhausted key never takes the app down.
+      http(RPC_SERVER, { timeout: 12_000 }),
+      http(RPC_PRIMARY, { timeout: 12_000 }),
+      http(RPC_FALLBACK, { timeout: 12_000 }),
+    ],
     { rank: false },
   ),
   batch: { multicall: { wait: 16 } },

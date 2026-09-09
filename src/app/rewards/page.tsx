@@ -25,7 +25,7 @@ export default function RewardsPage() {
           }}
         >
           REFRACT returns a slice of routing fees to the wallets that generate them. Accrual is read
-          straight from your swap history on chain 4663 — paste any address to audit it.
+          straight from your swap history on chain 4663. Paste any address to audit it.
         </p>
       </div>
 

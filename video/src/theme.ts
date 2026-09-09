@@ -41,7 +41,7 @@ export const FONT = {
  */
 export const SITE = {
   url: "refract.exchange",
-  handle: "@Refractexchange",
+  handle: "@RefractHq_",
   chain: "Robinhood Chain · 4663",
   /**
    * Token contract. Paste the full 0x address once the token is live and the
