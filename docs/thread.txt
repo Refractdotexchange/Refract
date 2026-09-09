@@ -1,0 +1,100 @@
+1/
+There's a number on our pools page that reads "352 pools."
+
+Last week it read "0."
+
+Nothing was wrong with the chain. Our RPC rate-limited us mid-scan, the code returned an empty list, and cached it for 45 seconds as though it were true.
+
+That bug is why I'm writing this.
+---
+2/
+Robinhood Chain has a Uniswap V2 pair and four V3 fee tiers live at once.
+
+Five venues, same pair, different prices.
+
+Most interfaces quote one and call it the price. I wanted to know what that costs.
+---
+3/
+1 ETH → USDG, all five, same second:
+
+V3 0.01%   2,486.66
+V3 0.05%   2,484.43
+V3 0.30%   2,479.76
+V2 direct  2,471.48
+V3 1.00%   2,340.95
+
+The pool most routers default to is 0.61% worse. On 1 ETH that's $15 you handed over for nothing.
+---
+4/
+So REFRACT quotes all six paths (V2 direct, V2 via WETH, four V3 tiers), ranks by output, and shows the shortfall on every route it didn't pick.
+
+You can override it. The engine recommends. It doesn't hide the alternatives.
+---
+5/
+Price impact: we quote a probe trade 1/1000th the size on the same venue and compare.
+
+0.1 ETH   0.00%
+5 ETH     0.02%
+50 ETH    0.27%
+500 ETH   5.90%
+
+First version returned null every time. Integer division truncated it to zero. ETH has 18 decimals, USDG has 6.
+---
+6/
+Finding new tokens took three attempts.
+
+I read the launch event wrong twice. topics[2] was a wallet, not a curve. topics[3] was a contract holding nothing.
+
+What works: every launch mints full supply to the curve in one Transfer from 0x0. That mint IS the curve.
+---
+7/
+That fix is better than what I was reaching for.
+
+It doesn't depend on any launchpad's private ABI, so it keeps working when the next one ships a completely different event shape.
+---
+8/
+Our rewards page once told a wallet it had routed 62,257,097 ETH.
+
+It had routed 0.14.
+
+I was reading the larger swap leg as the notional. Swap ETH for a memecoin with 1B supply and the memecoin side is enormous. I was calling that ETH.
+
+Fixed: read the WETH side only.
+---
+9/
+Three tokens on our pools page are all called PCAT. Near-identical names. Same style of logo.
+
+Three different contracts. One might be fine. I don't know which.
+
+We flag duplicates automatically and put the address on the card, because that's the only field that differs.
+---
+10/
+Public RPCs kept rate-limiting us. I throttled our requests. Helped a little.
+
+Real cause: viem chunks multicalls by a 1024-byte default. Our batch of 460 calls was silently becoming ~30 requests.
+
+I was rate-limiting one request that was quietly becoming thirty.
+---
+11/
+Now when a scan does get limited, it's marked incomplete. The page shows a dash and says the RPC throttled us.
+
+It never shows you a confident zero.
+
+An empty result and a failed request look identical if you don't check. Almost nothing checks.
+---
+12/
+What doesn't work yet, from our README:
+
+• Cashback accrues but isn't claimable. Distributor isn't deployed.
+• Curve ETH reads zero (this launchpad doesn't hold proceeds there)
+• Tokens still on a curve have no price
+• Portfolio values are marks, not quotes
+---
+13/
+All of it is MIT licensed. Not a marketing repo with the interesting parts removed.
+
+github.com/Refractdotexchange/Refract
+
+Every number in the app is a live chain read. No third-party index, no seeded fixtures, no mocks.
+
+refract.exchange

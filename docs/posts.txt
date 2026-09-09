@@ -1,0 +1,69 @@
+Every trade you route through REFRACT accrues 0.12% of its volume back to your wallet.
+
+Not points. Not a multiplier that gets diluted later. A number computed from your own on-chain swap history, which means you can check it without trusting us.
+===
+Most "rewards" pages show you a balance and hope you don't ask how it was calculated.
+
+Ours reads your own Swap events off chain 4663, works out the ETH leg of each one, and shows the maths.
+
+0.12% of routed volume. Paste any address and audit it.
+===
+Being straight about this: cashback accrues but you can't claim it yet. The distributor contract isn't deployed.
+
+The page says so.
+
+We'd rather explain a balance you can't withdraw than show a claim button that does nothing.
+===
+250 ETH routed = 0.3 ETH accrued.
+
+That's the whole formula. 0.12%, no tiers, no lockup, no snapshot you have to be awake for.
+
+refract.exchange/rewards
+===
+Our rewards page once told a wallet it had routed 62,257,097 ETH.
+
+It had routed 0.14.
+
+We were reading the larger leg of each swap as the notional. Swap ETH for a token with 1B supply and that side is enormous.
+
+Fixed. Same wallet now reads 0.1446 ETH. Correctly.
+===
+You don't earn cashback for holding something.
+
+You earn it for the thing you were already doing: trading. 0.12% of whatever you route, back to the wallet that routed it.
+===
+The pool most routers default to on chain 4663 is 0.61% worse than the best available tier.
+
+On 1 ETH that's about $15.
+
+We quote all six venues and route through the winner. Same trade, better fill.
+===
+Three tokens on our pools page right now are all called PCAT. Same symbol. Near-identical names. Same style of logo.
+
+Three different contracts.
+
+We flag duplicates automatically. The address is the only field that tells them apart, so we put it on the card.
+===
+Bought something on a fresh curve four minutes ago?
+
+It's already in your portfolio.
+
+We don't use a token list. We read your wallet's own transfer history and price whatever we find from its deepest pool.
+===
+Approval amount: exactly this swap.
+
+Not unlimited. Not "infinite for convenience." The exact amount, every time.
+
+Your wallet signs. We never hold your funds.
+===
+When our chain scan gets rate-limited, the page tells you.
+
+It shows a dash and says the RPC throttled us. It doesn't show a confident zero.
+
+An empty result and a failed request look identical if you don't check. Almost nothing checks.
+===
+Everything in the app is a live chain read. No third-party price index, no seeded data, no mocks anywhere in the codebase.
+
+Don't take our word for it, it's MIT licensed.
+
+github.com/Refractdotexchange/Refract

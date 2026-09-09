@@ -1,0 +1,141 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;overflow:hidden;background:#000}
+  .stage{position:relative;width:1600px;height:900px;padding:48px 84px 42px;background:
+    radial-gradient(ellipse 58% 74% at 50% 40%, rgba(163,230,53,.17), transparent 62%),
+    radial-gradient(ellipse 90% 40% at 50% 104%, rgba(121,181,32,.08), transparent 62%),
+    #000;}
+  .gridbg{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(163,230,53,.055) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(163,230,53,.055) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(ellipse 84% 88% at 50% 44%,#000 28%,transparent 82%);}
+  .arcs{position:absolute;inset:0;z-index:1}
+  .inner{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center}
+
+  .head{width:100%;display:flex;align-items:center;gap:20px}
+  .head svg.mk{width:40px;height:40px;flex:0 0 40px}
+  .brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:29px;
+         letter-spacing:-.05em;color:#f2f5ee}
+  .kick{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:14px;
+        letter-spacing:.26em;text-transform:uppercase;color:#67715f}
+
+  .eyebrow{margin-top:34px;display:inline-flex;align-items:center;gap:11px;
+    font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.26em;
+    text-transform:uppercase;color:#a3e635;
+    border:1px solid rgba(163,230,53,.4);background:rgba(163,230,53,.08);
+    border-radius:999px;padding:9px 19px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#a3e635;box-shadow:0 0 11px #a3e635}
+
+  .num{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:168px;
+       line-height:.9;letter-spacing:-.06em;margin-top:14px;
+       background:linear-gradient(98deg,#f8fff0,#e6ffb3 22%,#c9f56e 52%,#a3e635 78%,#79b520);
+       -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{font-family:'Space Grotesk',sans-serif;font-size:31px;color:#c3ccba;
+       margin-top:4px;letter-spacing:-.015em}
+  .sub b{color:#f2f5ee;font-weight:600}
+
+  .flow{display:flex;align-items:center;gap:15px;
+        font-family:'IBM Plex Mono',monospace;font-size:16px}
+  .flowwrap{margin-top:30px;position:relative;display:flex;flex-direction:column;align-items:center}
+  .loop{width:880px;height:46px;margin-top:4px}
+  .flow s{text-decoration:none;padding:12px 22px;border-radius:11px;
+          background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);color:#9ba695}
+  .flow s.on{color:#0b1400;background:linear-gradient(96deg,#c9f56e,#a3e635);
+             border-color:#a3e635;font-weight:600}
+  .flow o{color:#79b520;font-size:19px}
+
+  .ledger{margin-top:28px;width:940px;border:1px solid rgba(163,230,53,.22);
+          border-radius:20px;background:rgba(255,255,255,.028);overflow:hidden}
+  .lhead{display:flex;padding:15px 30px;border-bottom:1px solid rgba(255,255,255,.07);
+         font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.22em;
+         text-transform:uppercase;color:#5e6a56}
+  .lhead span:first-child{flex:1}
+  .row{display:flex;align-items:center;padding:14px 30px;
+       border-bottom:1px solid rgba(255,255,255,.045);
+       font-family:'IBM Plex Mono',monospace;font-size:26px;color:#c3ccba}
+  .row:last-child{border-bottom:none}
+  .row span:first-child{flex:1}
+  .row b{color:#a3e635;font-weight:600}
+
+  .note{margin-top:auto;padding-top:18px;width:100%;display:flex;align-items:flex-end;
+        justify-content:space-between;gap:40px}
+  .fine{font-family:'Space Grotesk',sans-serif;font-size:19px;color:#6f7a68;
+        line-height:1.45;max-width:660px;text-align:left}
+  .right{text-align:right;flex-shrink:0}
+  .url{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;
+       letter-spacing:-.02em;color:#f2f5ee}
+  .meta{margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;
+        letter-spacing:.2em;text-transform:uppercase;color:#5e6a56}
+</style>
+<div class="stage">
+  <div class="gridbg"></div>
+
+  <div class="inner">
+    <div class="head">
+      <svg class="mk" viewBox="0 0 32 32" fill="none">
+        <defs>
+          <linearGradient id="hm2" x1="16" y1="5" x2="16" y2="28">
+            <stop offset="0%" stop-color="#e6ffb3"/><stop offset="100%" stop-color="#4b7a12"/>
+          </linearGradient>
+        </defs>
+        <path d="M2 15 H11" stroke="#f2f5ee" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M16 4.5 L27 27 H5 Z" fill="rgba(163,230,53,.12)" stroke="url(#hm2)"
+              stroke-width="2.4" stroke-linejoin="round"/>
+        <g stroke-width="2.4" stroke-linecap="round">
+          <path d="M19 14 L31 10" stroke="#f8fff0"/>
+          <path d="M20 17 L31 16" stroke="#c9f56e"/>
+          <path d="M21 20 L30 23" stroke="#79b520"/>
+        </g>
+      </svg>
+      <span class="brand">REFRACT</span>
+      <span class="kick">Rewards · Chain 4663</span>
+    </div>
+
+    <div class="eyebrow"><span class="dot"></span>Routed volume pays you back</div>
+
+    <div class="num">0.12%</div>
+    <div class="sub">of routed volume, back to <b>the wallet that routed it</b></div>
+
+    <div class="flowwrap">
+      <div class="flow">
+        <s>You swap</s><o>&#8594;</o><s>We route the best venue</s><o>&#8594;</o><s class="on">0.12% accrues to you</s>
+      </div>
+      <svg class="loop" viewBox="0 0 880 46" fill="none" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="lp" x1="860" y1="0" x2="30" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#a3e635" stop-opacity=".85"/>
+            <stop offset="100%" stop-color="#a3e635" stop-opacity=".2"/>
+          </linearGradient>
+        </defs>
+        <path d="M858 2 C858 30 844 38 812 38 H68 C36 38 22 30 22 6"
+              stroke="url(#lp)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M16 12 L22 2 L28 12" stroke="#a3e635" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+
+    <div class="ledger">
+      <div class="lhead"><span>Routed volume</span><span>Accrued</span></div>
+      <div class="row"><span>1 ETH</span><b>0.0012 ETH</b></div>
+      <div class="row"><span>50 ETH</span><b>0.06 ETH</b></div>
+      <div class="row"><span>250 ETH</span><b>0.30 ETH</b></div>
+    </div>
+
+    <div class="note">
+      <div class="fine">
+        Computed from your own on-chain swap history, so anyone can audit it.
+        Accrues today; distribution goes live with the rewards contract.
+      </div>
+      <div class="right">
+        <div class="url">refract.exchange</div>
+        <div class="meta">Non-custodial · Open source</div>
+      </div>
+    </div>
+  </div>
+</div>

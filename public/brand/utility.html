@@ -1,0 +1,180 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;overflow:hidden;background:#000}
+  .stage{position:relative;width:1600px;height:900px;padding:58px 84px 46px;background:
+    radial-gradient(ellipse 70% 60% at 50% 0%, rgba(163,230,53,.13), transparent 62%),
+    radial-gradient(ellipse 60% 50% at 50% 108%, rgba(121,181,32,.09), transparent 60%),
+    #000;}
+  .grid-bg{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(163,230,53,.055) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(163,230,53,.055) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(ellipse 88% 92% at 50% 46%,#000 30%,transparent 84%);}
+  .inner{position:relative;z-index:2;height:100%;display:flex;flex-direction:column}
+
+  /* ---- header: mark + rule + headline, centred ---- */
+  .head{display:flex;align-items:center;gap:22px;margin-bottom:8px}
+  .head svg{width:44px;height:44px;flex:0 0 44px}
+  .brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:32px;
+         letter-spacing:-.05em;color:#f2f5ee}
+  .kick{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:15px;
+        letter-spacing:.26em;text-transform:uppercase;color:#67715f}
+  .title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:66px;
+         line-height:1;letter-spacing:-.05em;color:#f2f5ee;margin-top:14px}
+  .title b{background:linear-gradient(96deg,#f8fff0,#e6ffb3 24%,#c9f56e 54%,#a3e635);
+           -webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* ---- 2x2 grid ---- */
+  .cells{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
+         gap:18px;margin-top:24px}
+  .cell{position:relative;background:rgba(255,255,255,.028);
+        border:1px solid rgba(163,230,53,.2);border-radius:22px;padding:24px 30px;
+        display:flex;flex-direction:column;overflow:hidden}
+  .cell::after{content:"";position:absolute;inset:0;border-radius:22px;pointer-events:none;
+    background:linear-gradient(160deg,rgba(163,230,53,.09),transparent 46%)}
+  .n{position:absolute;top:26px;right:30px;font-family:'IBM Plex Mono',monospace;
+     font-size:14px;letter-spacing:.2em;color:#3f4a38}
+  .lbl{font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.24em;
+       text-transform:uppercase;color:#a3e635;margin-bottom:14px}
+  .big{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:52px;
+       letter-spacing:-.04em;color:#f2f5ee;line-height:1}
+  .big em{font-style:normal;font-size:30px;color:#7f8a78;font-weight:500;margin-left:8px}
+  .desc{font-family:'Space Grotesk',sans-serif;font-size:20px;color:#8b9484;
+        line-height:1.4;margin-top:11px;max-width:520px}
+  .viz{margin-top:auto;padding-top:16px}
+
+  /* mini route bars */
+  .bars{display:flex;flex-direction:column;gap:7px}
+  .bar{height:9px;border-radius:5px;background:rgba(255,255,255,.07)}
+  .bar span{display:block;height:100%;border-radius:5px;background:#3f4a38}
+  .bar.win span{background:linear-gradient(90deg,#e6ffb3,#a3e635);box-shadow:0 0 16px rgba(163,230,53,.75)}
+
+  /* mini curve meters */
+  .meters{display:flex;gap:12px}
+  .meter{flex:1}
+  .meter i{display:block;height:9px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden}
+  .meter i b{display:block;height:100%;border-radius:5px;
+             background:linear-gradient(90deg,#c9f56e,#79b520)}
+  .meter u{display:block;font-family:'IBM Plex Mono',monospace;font-size:12px;
+           color:#5e6a56;margin-top:7px;text-decoration:none}
+
+  /* mini holding dots */
+  .dots{display:flex;align-items:center;gap:11px}
+  .dots i{border-radius:50%;display:block}
+  .dots u{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5e6a56;
+          text-decoration:none;margin-left:6px}
+
+  /* mini flow */
+  .flow{display:flex;align-items:center;gap:13px;font-family:'IBM Plex Mono',monospace;
+        font-size:14px;color:#5e6a56}
+  .flow s{text-decoration:none;padding:7px 13px;border-radius:8px;
+          background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:#8b9484}
+  .flow s.on{color:#0b1400;background:#a3e635;border-color:#a3e635;font-weight:600}
+  .flow o{color:#a3e635}
+
+  .foot{display:flex;align-items:center;justify-content:space-between;margin-top:22px}
+  .url{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:30px;
+       letter-spacing:-.02em;color:#f2f5ee}
+  .meta{font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.2em;
+        text-transform:uppercase;color:#67715f}
+</style>
+<div class="stage">
+  <div class="grid-bg"></div>
+  <div class="inner">
+
+    <div class="head">
+      <svg viewBox="0 0 32 32" fill="none">
+        <defs>
+          <linearGradient id="hm" x1="16" y1="5" x2="16" y2="28">
+            <stop offset="0%" stop-color="#e6ffb3"/><stop offset="100%" stop-color="#4b7a12"/>
+          </linearGradient>
+        </defs>
+        <path d="M2 15 H11" stroke="#f2f5ee" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M16 4.5 L27 27 H5 Z" fill="rgba(163,230,53,.12)" stroke="url(#hm)"
+              stroke-width="2.4" stroke-linejoin="round"/>
+        <g stroke-width="2.4" stroke-linecap="round">
+          <path d="M19 14 L31 10" stroke="#f8fff0"/>
+          <path d="M20 17 L31 16" stroke="#c9f56e"/>
+          <path d="M21 20 L30 23" stroke="#79b520"/>
+        </g>
+      </svg>
+      <span class="brand">REFRACT</span>
+      <span class="kick">Robinhood Chain · 4663</span>
+    </div>
+
+    <div class="title">One app. <b>Four jobs.</b></div>
+
+    <div class="cells">
+
+      <div class="cell">
+        <span class="n">01</span>
+        <div class="lbl">Route engine</div>
+        <div class="big">6 venues<em>quoted per trade</em></div>
+        <div class="desc">V2 direct, V2 via WETH, and all four V3 fee tiers. It routes through whichever pays out most.</div>
+        <div class="viz">
+          <div class="bars">
+            <div class="bar win"><span style="width:100%"></span></div>
+            <div class="bar"><span style="width:88%"></span></div>
+            <div class="bar"><span style="width:74%"></span></div>
+            <div class="bar"><span style="width:52%"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cell">
+        <span class="n">02</span>
+        <div class="lbl">Launch pools</div>
+        <div class="big">352 found<em>live, right now</em></div>
+        <div class="desc">Tokens appear the moment they mint, read from launchpad events. No listing, no waiting.</div>
+        <div class="viz">
+          <div class="meters">
+            <div class="meter"><i><b style="width:31%"></b></i><u>31.3%</u></div>
+            <div class="meter"><i><b style="width:37%"></b></i><u>36.8%</u></div>
+            <div class="meter"><i><b style="width:50%"></b></i><u>49.5%</u></div>
+            <div class="meter"><i><b style="width:5%"></b></i><u>4.7%</u></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cell">
+        <span class="n">03</span>
+        <div class="lbl">Portfolio</div>
+        <div class="big">No token list<em>needed</em></div>
+        <div class="desc">Found from your wallet&#8217;s own transfer history, then priced from the deepest pool.</div>
+        <div class="viz">
+          <div class="dots">
+            <i style="width:30px;height:30px;background:linear-gradient(140deg,#e6ffb3,#a3e635)"></i>
+            <i style="width:26px;height:26px;background:linear-gradient(140deg,#c9f56e,#79b520)"></i>
+            <i style="width:21px;height:21px;background:linear-gradient(140deg,#a3e635,#4b7a12)"></i>
+            <i style="width:16px;height:16px;background:linear-gradient(140deg,#79b520,#3d6410)"></i>
+            <u>priced from live pools</u>
+          </div>
+        </div>
+      </div>
+
+      <div class="cell">
+        <span class="n">04</span>
+        <div class="lbl">Rewards</div>
+        <div class="big">0.12%<em>of routed volume</em></div>
+        <div class="desc">Accrues back to the wallet that generated it, computed from your own on-chain swaps.</div>
+        <div class="viz">
+          <div class="flow">
+            <s>You trade</s><o>&#8594;</o><s>We route</s><o>&#8594;</o><s class="on">You earn</s>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="foot">
+      <span class="url">refract.exchange</span>
+      <span class="meta">Non-custodial · Open source · MIT</span>
+    </div>
+
+  </div>
+</div>
