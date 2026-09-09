@@ -216,6 +216,23 @@ export const EndCard: React.FC<{ tagline: string; delay?: number }> = ({ tagline
       <div style={{ fontFamily: FONT.mono, fontSize: 22, color: C.faint, letterSpacing: "0.26em", opacity: p3, marginTop: 6 }}>
         {[SITE.url, SITE.handle, SITE.chain].filter(Boolean).join("   ·   ").toUpperCase()}
       </div>
+      {SITE.ca && (
+        <div
+          style={{
+            display: "flex", alignItems: "center", gap: 18, opacity: p3, marginTop: 14,
+            padding: "14px 26px", borderRadius: 14,
+            background: "rgba(163,230,53,0.07)", border: `1px solid ${C.line}`,
+          }}
+        >
+          <span style={{ fontFamily: FONT.mono, fontSize: 19, letterSpacing: "0.24em", color: C.gold }}>CA</span>
+          <span style={{ width: 1, height: 22, background: C.line }} />
+          {/* Full address, never truncated: the whole point is that a viewer
+              can read it straight off the frame. */}
+          <span style={{ fontFamily: FONT.mono, fontSize: 26, letterSpacing: "0.04em", color: C.text }}>
+            {SITE.ca}
+          </span>
+        </div>
+      )}
     </AbsoluteFill>
   );
 };

@@ -18,133 +18,81 @@ import { Mix, hz, sine, sineSweep, saw, noise, fm, pluck, svfLowpass, highpass, 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public", "music");
 const FPS = 30;
 const s = (frame) => frame / FPS;
-// 120 BPM: a 0.5s beat is exactly 15 frames at 30fps, so every downbeat lands
-// on a whole frame and picture cues sit on the grid without drift.
-const BEAT = 0.5;
-const BAR = BEAT * 4;
+const BAR = 2.5;
+const BEAT = BAR / 4;
 
-/* ---------- harmony ------------------------------------------------------
+/* ---------- harmony ------------------------------------------------------ */
 
-   The films moved from an ambient bed to something with a pulse: A minor at
-   120 BPM. That tempo is deliberate — a 0.5s beat is exactly 15 frames at
-   30fps, so every downbeat lands on a whole frame and picture cues can be
-   placed on the grid without drift.
-
-   Voicings stay open and add9/9th-heavy: they read as modern and leave the
-   middle clear for the bass, which now moves rather than droning.
---------------------------------------------------------------------------- */
-
+// i - VI - III - iv in D minor, voiced open so the pad never muddies the sub.
 const PROG = [
-  { name: "Am9",    pad: [57, 60, 64, 67, 71], sub: 33, root: 45, arp: [57, 60, 64, 67, 71] },
-  { name: "Fmaj9",  pad: [53, 57, 60, 64, 67], sub: 29, root: 41, arp: [53, 57, 60, 64, 67] },
-  { name: "Cmaj9",  pad: [55, 59, 60, 64, 67], sub: 36, root: 48, arp: [55, 59, 60, 64, 67] },
-  { name: "Em7",    pad: [55, 59, 62, 64, 67], sub: 28, root: 40, arp: [55, 59, 62, 64, 67] },
+  { name: "Dm9",    pad: [50, 57, 60, 65], sub: 38, arp: [50, 57, 60, 65, 69] },
+  { name: "Bbmaj7", pad: [46, 53, 57, 65], sub: 34, arp: [46, 53, 57, 65, 69] },
+  { name: "Fadd9",  pad: [48, 53, 60, 67], pad2: 55, sub: 41, arp: [48, 53, 55, 60, 67] },
+  { name: "Gm7",    pad: [50, 55, 58, 65], sub: 43, arp: [50, 55, 58, 65, 70] },
 ];
 const chordAt = (i) => PROG[i % PROG.length];
 
 /* ---------- instruments -------------------------------------------------- */
 
-/** Wide detuned pad. Open voicing, gentle attack, sits behind everything. */
-function pad(mix, midis, t, dur, { gain = 0.14, open = 1, send = 0.5 } = {}) {
+/** Wide supersaw pad under a slow filter sweep. The bed of every cue. */
+function pad(mix, midis, t, dur, { gain = 0.16, open = 1, send = 0.55 } = {}) {
   const len = samples(dur);
-  midis.forEach((m, i) => {
-    const v = saw(hz(m), dur, 3, 0.005 + i * 0.0012);
-    const cut = 900 + 2100 * open;
-    const f = svfLowpass(v, cut, 0.5);
-    const env = adsr(len, 0.5, 0.7, 0.72, Math.min(1.4, dur * 0.45));
-    for (let k = 0; k < len; k++) f[k] *= env[k];
-    mix.add(f, t, { gain: gain / midis.length, pan: -0.55 + (i / (midis.length - 1 || 1)) * 1.1, send });
-  });
-}
-
-/** Deep sine sub. Anchors the root without competing with the bassline. */
-function sub(mix, midi, t, dur, gain = 0.42) {
-  const len = samples(dur);
-  const v = sine(hz(midi), dur);
-  const env = adsr(len, 0.08, 0.3, 0.85, 0.5);
-  for (let i = 0; i < len; i++) v[i] *= env[i];
-  mix.add(v, t, { gain });
-}
-
-/**
- * Moving bassline — a filtered saw with a fast envelope on the cutoff, so each
- * note has a plucked attack. This is the main thing separating the new score
- * from the old drone.
- */
-function bassNote(mix, midi, t, dur, { gain = 0.3, bite = 1 } = {}) {
-  const len = samples(dur);
-  const v = saw(hz(midi), dur, 2, 0.004);
+  const env = adsr(len, Math.min(1.1, dur * 0.34), 0.5, 0.8, Math.min(1.4, dur * 0.4));
+  // Cutoff drifts up across the note so a held chord keeps developing.
   const cut = new Float32Array(len);
   for (let i = 0; i < len; i++) {
     const t01 = i / len;
-    cut[i] = 120 + (1500 + 900 * bite) * Math.exp(-t01 * 9);
+    cut[i] = (520 + 900 * open * t01) * (1 + 0.12 * Math.sin((2 * Math.PI * i) / (SR * 3.1)));
   }
-  const f = svfLowpass(v, cut, 0.88);
-  const env = adsr(len, 0.004, 0.09, 0.55, 0.1);
-  for (let i = 0; i < len; i++) f[i] *= env[i];
-  mix.add(f, t, { gain, send: 0.12 });
-}
-
-/** Four-on-the-floor kick: pitch sweep plus a click for the transient. */
-function kick(mix, t, gain = 0.72) {
-  const len = samples(0.5);
-  const body = sineSweep(150, 46, len, 5.2);
-  const env = expEnv(len, 0.11);
-  for (let i = 0; i < len; i++) body[i] *= env[i];
-  const click = highpass(noise(samples(0.012)), 1800);
-  for (let i = 0; i < click.length; i++) body[i] += click[i] * 0.5 * (1 - i / click.length);
-  mix.add(body, t, { gain });
-}
-
-/** Layered noise clap on the backbeat. Three offset bursts, then a tail. */
-function clap(mix, t, gain = 0.3) {
-  const burst = (off, g) => {
-    const len = samples(0.05);
-    const n = highpass(svfLowpass(noise(len), 5200, 0.7), 900);
-    const env = expEnv(len, 0.014);
-    for (let i = 0; i < len; i++) n[i] *= env[i];
-    mix.add(n, t + off, { gain: gain * g, send: 0.35 });
-  };
-  burst(0, 0.7); burst(0.011, 0.85); burst(0.023, 1);
-  const tail = highpass(svfLowpass(noise(samples(0.24)), 4200, 0.6), 1100);
-  const tenv = expEnv(tail.length, 0.07);
-  for (let i = 0; i < tail.length; i++) tail[i] *= tenv[i];
-  mix.add(tail, t + 0.03, { gain: gain * 0.5, send: 0.5 });
-}
-
-/** Closed hat. `open` stretches the decay for offbeat open hats. */
-function hat(mix, t, { gain = 0.11, open = false, pan = 0 } = {}) {
-  const dur = open ? 0.17 : 0.032;
-  const n = highpass(noise(samples(dur)), open ? 6500 : 8200);
-  const env = expEnv(n.length, open ? 0.06 : 0.011);
-  for (let i = 0; i < n.length; i++) n[i] *= env[i];
-  mix.add(n, t, { gain, pan, send: open ? 0.3 : 0.12 });
-}
-
-/** Short filtered chord stab — the rhythmic hook. */
-function stab(mix, midis, t, { gain = 0.15, dur = 0.16, pan = 0 } = {}) {
-  const len = samples(dur);
-  midis.forEach((m) => {
-    const v = saw(hz(m), dur, 2, 0.006);
-    const f = svfLowpass(v, 2600, 0.8);
-    const env = adsr(len, 0.005, 0.07, 0.25, 0.06);
-    for (let i = 0; i < len; i++) f[i] *= env[i];
-    mix.add(f, t, { gain: gain / midis.length, pan, send: 0.4 });
+  midis.forEach((m, k) => {
+    const raw = saw(hz(m), len, 3, 0.008);
+    const filt = svfLowpass(raw, cut, 1.1);
+    for (let i = 0; i < len; i++) filt[i] *= env[i];
+    mix.add(filt, t, { gain: gain / Math.sqrt(midis.length), pan: -0.55 + (1.1 * k) / Math.max(1, midis.length - 1), send });
   });
 }
 
-function bell(mix, midi, t, { gain = 0.13, pan = 0, decay = 0.6, index = 3.2 } = {}) {
-  const v = fm(hz(midi), 2.01, index, 1.4, decay);
-  mix.add(v, t, { gain, pan, send: 0.7 });
+function sub(mix, midi, t, dur, gain = 0.5) {
+  const len = samples(dur);
+  const o = sine(hz(midi), len);
+  const env = adsr(len, 0.02, 0.15, 0.85, Math.min(0.6, dur * 0.4));
+  for (let i = 0; i < len; i++) o[i] *= env[i];
+  mix.add(svfLowpass(o, 180, 0.7), t, { gain, send: 0.05 });
 }
 
-function pluckNote(mix, midi, t, { gain = 0.14, pan = 0, dur = 0.9 } = {}) {
-  const v = pluck(hz(midi), dur, 0.45);
-  const env = expEnv(v.length, dur * 0.4);
-  for (let i = 0; i < v.length; i++) v[i] *= env[i];
-  mix.add(v, t, { gain, pan, send: 0.5 });
+function kick(mix, t, gain = 0.62) {
+  const len = samples(0.42);
+  const body = sineSweep(112, 44, len, 4);
+  const env = expEnv(len, 0.085);
+  const click = highpass(noise(samples(0.008)), 1800);
+  for (let i = 0; i < len; i++) body[i] *= env[i];
+  for (let i = 0; i < click.length; i++) body[i] += click[i] * 0.16;
+  mix.add(body, t, { gain, send: 0.06 });
 }
 
+function hat(mix, t, gain = 0.1, decay = 0.028) {
+  const len = samples(0.09);
+  const n = highpass(noise(len), 7000);
+  const env = expEnv(len, decay);
+  for (let i = 0; i < len; i++) n[i] *= env[i];
+  mix.add(n, t, { gain, pan: 0.28, send: 0.25 });
+}
+
+/** Bright FM bell — the sound of a quote resolving, or a gold shard landing. */
+function bell(mix, midi, t, { gain = 0.14, pan = 0, decay = 0.6, index = 3.2 } = {}) {
+  const len = samples(decay * 4);
+  mix.add(fm(hz(midi), 2.01, index, len, decay), t, { gain, pan, send: 0.75 });
+}
+
+function pluckNote(mix, midi, t, { gain = 0.15, pan = 0, dur = 0.9 } = {}) {
+  const len = samples(dur);
+  const p = pluck(hz(midi), len, 0.55);
+  const env = expEnv(len, dur * 0.42);
+  for (let i = 0; i < len; i++) p[i] *= env[i];
+  mix.add(svfLowpass(p, 3200, 0.8), t, { gain, pan, send: 0.5 });
+}
+
+/** Low boom plus a bloom of noise — lands on picture hits. */
 function impact(mix, t, { gain = 0.55, tone = 46 } = {}) {
   const len = samples(2.2);
   const boom = sineSweep(tone * 2.4, tone, len, 5);
@@ -156,6 +104,7 @@ function impact(mix, t, { gain = 0.55, tone = 46 } = {}) {
   mix.add(boom, t, { gain, send: 0.6 });
 }
 
+/** Noise sweeping up through a filter — tension into a cut. */
 function riser(mix, t, dur, { gain = 0.2 } = {}) {
   const len = samples(dur);
   const n = noise(len);
@@ -166,6 +115,7 @@ function riser(mix, t, dur, { gain = 0.2 } = {}) {
   mix.add(sw, t, { gain, send: 0.6 });
 }
 
+/** Filtered noise passing left to right — a scope sweep, a beam crossing. */
 function whoosh(mix, t, dur, { gain = 0.22 } = {}) {
   const len = samples(dur);
   const cut = new Float32Array(len);
@@ -179,61 +129,44 @@ function whoosh(mix, t, dur, { gain = 0.22 } = {}) {
   mix.add(n, t + dur * 0.35, { gain: gain * 0.7, pan: 0.6, send: 0.5 });
 }
 
-/* ---------- the bed ------------------------------------------------------
+/* ---------- the bed ------------------------------------------------------ */
 
-   `density(t)` returns 0..1 and decides how much of the kit plays at that
-   moment. Drums enter in stages rather than all at once: sub and pad below
-   0.3, kick from 0.35, hats from 0.5, bassline from 0.6, clap from 0.75.
-   That is how one arrangement gives four films four different shapes.
---------------------------------------------------------------------------- */
-
-function bed(mix, dur, density, { chordEvery = 4, padGain = 0.14, subGain = 0.4 } = {}) {
-  // Harmony: one chord per two bars.
+/**
+ * Lays the harmonic bed across the whole film. `density(t)` returns 0..1 and
+ * decides how much of the kit is playing at that moment, which is how each
+ * film gets its own shape out of one arrangement.
+ */
+function bed(mix, dur, density, { chordEvery = 5, padGain = 0.16, subGain = 0.46 } = {}) {
   for (let i = 0, t = 0; t < dur; i++, t += chordEvery) {
     const c = chordAt(i);
-    const span = Math.min(chordEvery + 0.9, dur - t);
-    const d = density(t);
-    pad(mix, c.pad, t, span, { gain: padGain * (0.55 + 0.45 * d), open: 0.35 + 0.65 * d });
-    sub(mix, c.sub, t, span, subGain * (0.7 + 0.3 * d));
+    const len = Math.min(chordEvery + 1.6, dur - t + 1.2);
+    const d = density(t + chordEvery * 0.5);
+    pad(mix, c.pad, t, len, { gain: padGain * (0.55 + 0.45 * d), open: 0.4 + 0.6 * d });
+    sub(mix, c.sub, t, Math.min(chordEvery, dur - t), subGain * (0.5 + 0.5 * d));
   }
 
-  // Rhythm section on the 120 BPM grid.
-  for (let b = 0, t = 0; t < dur; b++, t += BEAT) {
+  for (let b = 0; b * BEAT < dur; b++) {
+    const t = b * BEAT;
     const d = density(t);
-    const beatInBar = b % 4;
-    const chordIdx = Math.floor(t / chordEvery);
-    const c = chordAt(chordIdx);
-
-    if (d >= 0.35) kick(mix, t, 0.62 * Math.min(1, 0.7 + d * 0.5));
-    if (d >= 0.75 && (beatInBar === 1 || beatInBar === 3)) clap(mix, t, 0.26 * d);
-
-    if (d >= 0.5) {
-      hat(mix, t + BEAT / 2, { gain: 0.075 * d, open: d >= 0.8 && beatInBar % 2 === 1, pan: 0.18 });
-      if (d >= 0.65) hat(mix, t + BEAT / 4, { gain: 0.038 * d, pan: -0.22 });
-    }
-
-    // Bassline: root on the beat, an octave-up passing note on the and.
-    if (d >= 0.6) {
-      bassNote(mix, c.root, t, BEAT * 0.9, { gain: 0.26 * d, bite: d });
-      if (beatInBar === 3) bassNote(mix, c.root + 12, t + BEAT / 2, BEAT * 0.45, { gain: 0.17 * d, bite: d });
-    }
-
-    // Offbeat stabs once the track is fully up.
-    if (d >= 0.85 && beatInBar % 2 === 0) {
-      stab(mix, c.pad.slice(1, 4), t + BEAT / 2, { gain: 0.1 * d, pan: beatInBar === 0 ? -0.3 : 0.3 });
-    }
+    if (d > 0.42 && b % 4 === 0) kick(mix, t, 0.5 * d);
+    if (d > 0.62 && b % 4 === 2) kick(mix, t, 0.34 * d);
+    if (d > 0.5 && b % 2 === 1) hat(mix, t, 0.075 * d);
+    if (d > 0.8 && b % 4 === 3) hat(mix, t + BEAT / 2, 0.05 * d);
   }
 }
 
-/** Sixteenth-note arp over the current chord. */
-function arp(mix, from, to, { gain = 0.1, step = BEAT / 2, chordEvery = 4 } = {}) {
-  let i = 0;
-  for (let t = from; t < to; t += step, i++) {
+/** Ascending chord-tone arpeggio — reads as searching. */
+function arp(mix, from, to, { gain = 0.11, step = BEAT / 2, chordEvery = 5 } = {}) {
+  let k = 0;
+  for (let t = from; t < to; t += step, k++) {
     const c = chordAt(Math.floor(t / chordEvery));
-    const n = c.arp[i % c.arp.length] + (i % 8 === 7 ? 12 : 0);
-    pluckNote(mix, n, t, { gain, pan: -0.45 + ((i % 4) / 3) * 0.9, dur: 0.7 });
+    const notes = c.arp;
+    const m = notes[k % notes.length] + 12;
+    pluckNote(mix, m, t, { gain, pan: -0.4 + 0.8 * ((k % 5) / 4), dur: 0.7 });
   }
 }
+
+/* ---------- cues --------------------------------------------------------- */
 
 const ramp = (t, a, b, lo, hi) => (t <= a ? lo : t >= b ? hi : lo + ((t - a) / (b - a)) * (hi - lo));
 

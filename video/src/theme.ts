@@ -43,6 +43,13 @@ export const SITE = {
   url: "refract.exchange",
   handle: "@Refractexchange",
   chain: "Robinhood Chain · 4663",
+  /**
+   * Token contract. Paste the full 0x address once the token is live and the
+   * end card picks it up in all four films — it renders in full, on its own
+   * line, so viewers can read it off the frame. Empty means the line is
+   * omitted entirely rather than showing a placeholder.
+   */
+  ca: "",
 };
 
 export const FPS = 30;
