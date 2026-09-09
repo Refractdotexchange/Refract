@@ -1,0 +1,106 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;overflow:hidden;background:#000}
+  .stage{position:relative;width:1600px;height:900px;background:
+    radial-gradient(ellipse 62% 105% at 76% 50%, rgba(163,230,53,.15), transparent 60%),
+    radial-gradient(ellipse 46% 80% at 14% 40%, rgba(121,181,32,.07), transparent 64%),
+    #000;}
+  .grid{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(163,230,53,.07) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(163,230,53,.07) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(ellipse 78% 96% at 50% 50%,#000 26%,transparent 80%);}
+  svg.art{position:absolute;inset:0}
+
+  .copy{position:absolute;left:108px;top:50%;transform:translateY(-50%);z-index:2}
+  .pill{display:inline-flex;align-items:center;gap:11px;
+    font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.26em;
+    text-transform:uppercase;color:#a3e635;
+    border:1px solid rgba(163,230,53,.42);background:rgba(163,230,53,.08);
+    border-radius:999px;padding:10px 20px;margin-bottom:32px}
+  .dot{width:9px;height:9px;border-radius:50%;background:#a3e635;
+       box-shadow:0 0 12px #a3e635,0 0 26px rgba(163,230,53,.55)}
+
+  .head{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
+        font-size:112px;line-height:.95;letter-spacing:-.055em;color:#f2f5ee}
+  .head b{font-weight:700;background:linear-gradient(96deg,#f8fff0,#e6ffb3 26%,#c9f56e 55%,#a3e635);
+          -webkit-background-clip:text;background-clip:text;color:transparent}
+
+  .rule{width:172px;height:3px;border-radius:2px;margin:30px 0 28px;
+        background:linear-gradient(90deg,#f8fff0,#e6ffb3,#c9f56e,#a3e635,#79b520,#4b7a12)}
+
+  .checks{display:flex;flex-direction:column;gap:13px;margin-bottom:34px}
+  .chk{display:flex;align-items:center;gap:14px;
+       font-family:'Space Grotesk',system-ui,sans-serif;font-size:27px;color:#9ba695;font-weight:500}
+  .chk i{width:26px;height:26px;border-radius:50%;flex:0 0 26px;
+         background:rgba(163,230,53,.14);border:1px solid rgba(163,230,53,.5);
+         display:flex;align-items:center;justify-content:center}
+  .chk svg{width:14px;height:14px}
+
+  .url{font-family:'Space Grotesk',system-ui,sans-serif;
+       font-weight:600;font-size:36px;letter-spacing:-.022em;color:#f2f5ee}
+  .meta{margin-top:13px;font-family:'IBM Plex Mono',monospace;font-size:16px;
+        letter-spacing:.19em;text-transform:uppercase;color:#67715f}
+</style>
+<div class="stage">
+  <div class="grid"></div>
+
+  <svg class="art" viewBox="0 0 1600 900" width="1600" height="900" fill="none">
+    <defs>
+      <linearGradient id="dface" x1="1120" y1="310" x2="1120" y2="590" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#a3e635" stop-opacity=".24"/>
+        <stop offset="100%" stop-color="#4b7a12" stop-opacity=".04"/>
+      </linearGradient>
+      <linearGradient id="dedge" x1="1120" y1="302" x2="1120" y2="598" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#f8fff0"/><stop offset="52%" stop-color="#a3e635"/>
+        <stop offset="100%" stop-color="#4b7a12"/>
+      </linearGradient>
+      <linearGradient id="dbeam" x1="892" y1="0" x2="1076" y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#f2f5ee" stop-opacity="0"/>
+        <stop offset="100%" stop-color="#f8fff0" stop-opacity=".95"/>
+      </linearGradient>
+      <filter id="dsoft" x="-30%" y="-70%" width="160%" height="240%">
+        <feGaussianBlur stdDeviation="11"/>
+      </filter>
+    </defs>
+
+    <path d="M884 450 H1084" stroke="url(#dbeam)" stroke-width="10" stroke-linecap="round"/>
+    <path d="M1120 310 L1244 590 H996 Z" fill="url(#dface)" stroke="url(#dedge)"
+          stroke-width="10" stroke-linejoin="round"/>
+
+    <!-- Refracted bands, drawn as a rising chart step so the fan reads as a
+         market ticker without borrowing anyone else's mark. -->
+    <g filter="url(#dsoft)" opacity=".5" stroke-width="10" stroke-linecap="round">
+      <path d="M1162 414 L1600 292" stroke="#f8fff0"/>
+      <path d="M1172 440 L1600 392" stroke="#e6ffb3"/>
+      <path d="M1182 466 L1600 496" stroke="#c9f56e"/>
+      <path d="M1192 492 L1584 608" stroke="#a3e635"/>
+      <path d="M1202 518 L1548 700" stroke="#79b520"/>
+    </g>
+    <g stroke-width="10" stroke-linecap="round">
+      <path d="M1162 414 L1600 292" stroke="#f8fff0"/>
+      <path d="M1172 440 L1600 392" stroke="#e6ffb3"/>
+      <path d="M1182 466 L1600 496" stroke="#c9f56e"/>
+      <path d="M1192 492 L1584 608" stroke="#a3e635"/>
+      <path d="M1202 518 L1548 700" stroke="#79b520"/>
+    </g>
+  </svg>
+
+  <div class="copy">
+    <div class="pill"><span class="dot"></span>Listing updated</div>
+    <div class="head">NOW ON<br><b>DEXSCREENER.</b></div>
+    <div class="rule"></div>
+    <div class="checks">
+      <div class="chk"><i><svg viewBox="0 0 24 24" fill="none" stroke="#a3e635" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></i>Logo &amp; token info live</div>
+      <div class="chk"><i><svg viewBox="0 0 24 24" fill="none" stroke="#a3e635" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></i>Socials &amp; website linked</div>
+      <div class="chk"><i><svg viewBox="0 0 24 24" fill="none" stroke="#a3e635" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></i>Charts tracking live</div>
+    </div>
+    <div class="url">refract.exchange</div>
+    <div class="meta">Robinhood Chain · 4663</div>
+  </div>
+</div>

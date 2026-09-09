@@ -1,0 +1,111 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;overflow:hidden;background:#000}
+  .stage{position:relative;width:1600px;height:900px;padding:74px 84px;background:
+    radial-gradient(ellipse 58% 96% at 78% 46%, rgba(163,230,53,.14), transparent 60%),
+    radial-gradient(ellipse 44% 76% at 12% 40%, rgba(121,181,32,.07), transparent 64%),
+    #000;}
+  .grid{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(163,230,53,.06) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(163,230,53,.06) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(ellipse 80% 96% at 50% 50%,#000 26%,transparent 82%);}
+
+  .inner{position:relative;z-index:2;display:flex;gap:66px;height:100%}
+  .left{width:600px;display:flex;flex-direction:column;justify-content:center}
+  .right{flex:1;display:flex;flex-direction:column;justify-content:center}
+
+  .kick{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.28em;
+        text-transform:uppercase;color:#67715f;margin-bottom:22px}
+  .head{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
+        font-size:82px;line-height:.98;letter-spacing:-.05em;color:#f2f5ee}
+  .head b{background:linear-gradient(96deg,#f8fff0,#e6ffb3 24%,#c9f56e 54%,#a3e635);
+          -webkit-background-clip:text;background-clip:text;color:transparent}
+
+  .delta{display:inline-flex;align-items:baseline;gap:16px;margin:34px 0 0}
+  .delta .n{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:104px;
+            letter-spacing:-.05em;color:#a3e635;line-height:1}
+  .delta .l{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:27px;color:#9ba695}
+
+  .note{margin-top:26px;font-family:'Space Grotesk',sans-serif;font-size:25px;
+        color:#9ba695;line-height:1.5;max-width:520px}
+  .foot{margin-top:auto;padding-top:40px}
+  .url{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:33px;
+       letter-spacing:-.02em;color:#f2f5ee}
+  .meta{margin-top:11px;font-family:'IBM Plex Mono',monospace;font-size:15px;
+        letter-spacing:.19em;text-transform:uppercase;color:#67715f}
+
+  .pairbar{display:flex;align-items:center;gap:15px;margin-bottom:20px;
+           font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;color:#f2f5ee}
+  .pairbar .amt{font-family:'IBM Plex Mono',monospace;font-weight:500}
+  .pairbar .arrow{color:#a3e635;font-size:26px}
+
+  .rows{display:flex;flex-direction:column;gap:11px}
+  .row{display:flex;align-items:center;gap:18px;padding:20px 26px;border-radius:17px;
+       background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.075)}
+  .row.best{background:rgba(163,230,53,.11);border:1.5px solid rgba(163,230,53,.62);
+            box-shadow:0 0 40px -8px rgba(163,230,53,.42)}
+  .row .tick{width:9px;height:9px;border-radius:2px;background:#3a4234;flex:0 0 9px}
+  .row.best .tick{background:#a3e635;box-shadow:0 0 10px #a3e635}
+  .row .name{flex:1;min-width:0}
+  .row .venue{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:26px;color:#9ba695}
+  .row.best .venue{color:#f2f5ee}
+  .row .tier{font-family:'IBM Plex Mono',monospace;font-size:16px;color:#67715f;margin-top:3px}
+  .row .out{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:29px;color:#9ba695}
+  .row.best .out{color:#c9f56e;font-weight:600}
+  .row .tag{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.1em;
+            min-width:96px;text-align:right;color:#5e6656}
+  .row.best .tag{color:#0b1400;background:#a3e635;border-radius:999px;padding:6px 14px;
+                 min-width:0;font-weight:600;letter-spacing:.09em}
+</style>
+<div class="stage">
+  <div class="grid"></div>
+  <div class="inner">
+    <div class="left">
+      <div class="kick">Same trade · same second</div>
+      <div class="head">The pool you<br>default to isn't<br><b>the best price.</b></div>
+      <div class="delta"><span class="n">+0.61%</span><span class="l">over the V2 route</span></div>
+      <div class="note">REFRACT quotes all six venues on chain 4663 and routes through whichever pays out most. Found, not guessed.</div>
+      <div class="foot">
+        <div class="url">refract.exchange</div>
+        <div class="meta">Robinhood Chain · 4663 · Non-custodial</div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="pairbar"><span class="amt">1 ETH</span><span class="arrow">→</span><span>USDG</span></div>
+      <div class="rows">
+        <div class="row best">
+          <span class="tick"></span>
+          <span class="name"><div class="venue">Uniswap V3</div><div class="tier">0.01% fee tier</div></span>
+          <span class="out">2,486.66</span><span class="tag">BEST</span>
+        </div>
+        <div class="row">
+          <span class="tick"></span>
+          <span class="name"><div class="venue">Uniswap V3</div><div class="tier">0.05% fee tier</div></span>
+          <span class="out">2,484.43</span><span class="tag">−0.09%</span>
+        </div>
+        <div class="row">
+          <span class="tick"></span>
+          <span class="name"><div class="venue">Uniswap V3</div><div class="tier">0.30% fee tier</div></span>
+          <span class="out">2,479.76</span><span class="tag">−0.28%</span>
+        </div>
+        <div class="row">
+          <span class="tick"></span>
+          <span class="name"><div class="venue">Uniswap V2</div><div class="tier">direct pair</div></span>
+          <span class="out">2,471.48</span><span class="tag">−0.61%</span>
+        </div>
+        <div class="row">
+          <span class="tick"></span>
+          <span class="name"><div class="venue">Uniswap V3</div><div class="tier">1.00% fee tier</div></span>
+          <span class="out">2,340.95</span><span class="tag">−5.86%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

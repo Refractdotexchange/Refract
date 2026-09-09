@@ -1,0 +1,90 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;overflow:hidden;background:#000}
+  .stage{position:relative;width:1600px;height:900px;padding:78px 84px;background:
+    radial-gradient(ellipse 58% 96% at 76% 48%, rgba(163,230,53,.15), transparent 60%),
+    radial-gradient(ellipse 44% 76% at 12% 40%, rgba(121,181,32,.07), transparent 64%),
+    #000;}
+  .grid{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(163,230,53,.06) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(163,230,53,.06) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(ellipse 80% 96% at 50% 50%,#000 26%,transparent 82%);}
+  .inner{position:relative;z-index:2;display:flex;gap:60px;height:100%;align-items:center}
+  .left{width:640px}
+  .right{flex:1}
+
+  .pill{display:inline-flex;align-items:center;gap:11px;
+    font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.26em;
+    text-transform:uppercase;color:#a3e635;
+    border:1px solid rgba(163,230,53,.42);background:rgba(163,230,53,.08);
+    border-radius:999px;padding:10px 20px;margin-bottom:30px}
+  .dot{width:9px;height:9px;border-radius:50%;background:#a3e635;
+       box-shadow:0 0 12px #a3e635,0 0 26px rgba(163,230,53,.55)}
+
+  .head{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:96px;
+        line-height:.95;letter-spacing:-.055em;color:#f2f5ee}
+  .head b{background:linear-gradient(96deg,#f8fff0,#e6ffb3 24%,#c9f56e 54%,#a3e635);
+          -webkit-background-clip:text;background-clip:text;color:transparent}
+  .rule{width:172px;height:3px;border-radius:2px;margin:30px 0 26px;
+        background:linear-gradient(90deg,#f8fff0,#e6ffb3,#c9f56e,#a3e635,#79b520,#4b7a12)}
+  .sub{font-family:'Space Grotesk',sans-serif;font-size:26px;color:#9ba695;
+       line-height:1.5;max-width:560px}
+  .sub b{color:#c9f56e;font-weight:600}
+  .repo{margin-top:38px;display:inline-flex;align-items:center;gap:16px;
+        padding:18px 26px;border-radius:15px;background:rgba(255,255,255,.035);
+        border:1px solid rgba(163,230,53,.3)}
+  .repo svg{width:30px;height:30px;flex:0 0 30px}
+  .repo span{font-family:'IBM Plex Mono',monospace;font-size:25px;color:#f2f5ee;letter-spacing:-.01em}
+
+  .card{background:rgba(255,255,255,.03);border:1px solid rgba(163,230,53,.22);
+        border-radius:22px;padding:34px 36px}
+  .card-h{display:flex;align-items:center;gap:14px;margin-bottom:24px;
+          font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.22em;
+          text-transform:uppercase;color:#67715f}
+  .li{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px}
+  .li:last-child{margin-bottom:0}
+  .li i{width:26px;height:26px;border-radius:50%;flex:0 0 26px;margin-top:2px;
+        background:rgba(163,230,53,.14);border:1px solid rgba(163,230,53,.5);
+        display:flex;align-items:center;justify-content:center}
+  .li i svg{width:14px;height:14px}
+  .li .t{font-family:'Space Grotesk',sans-serif;font-size:24px;color:#f2f5ee;font-weight:600}
+  .li .d{font-family:'Space Grotesk',sans-serif;font-size:19px;color:#7f8a78;margin-top:4px;line-height:1.45}
+  .lic{margin-top:26px;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);
+       display:flex;align-items:center;justify-content:space-between}
+  .lic .k{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.2em;color:#67715f;text-transform:uppercase}
+  .lic .v{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#a3e635}
+</style>
+<div class="stage">
+  <div class="grid"></div>
+  <div class="inner">
+    <div class="left">
+      <div class="pill"><span class="dot"></span>Open source</div>
+      <div class="head">Read the<br><b>whole thing.</b></div>
+      <div class="rule"></div>
+      <div class="sub">Every number on REFRACT is a live chain read — <b>no third-party index, no seeded data, no mocks.</b> The repo is the proof.</div>
+      <div class="repo">
+        <svg viewBox="0 0 24 24" fill="#a3e635"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2 0-.4-.5-1.6.2-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.6 18.3 5 18.3 5c.7 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3Z"/></svg>
+        <span>github.com/Refractdotexchange/Refract</span>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="card">
+        <div class="card-h">What you get</div>
+        <div class="li"><i><svg viewBox="0 0 24 24" fill="none" stroke="#a3e635" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></i>
+          <div><div class="t">The full route engine</div><div class="d">V2 + all four V3 tiers, quoted on-chain</div></div></div>
+        <div class="li"><i><svg viewBox="0 0 24 24" fill="none" stroke="#a3e635" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></i>
+          <div><div class="t">Launch discovery</div><div class="d">Protocol-agnostic — resolved from the mint tx</div></div></div>
+        <div class="li"><i><svg viewBox="0 0 24 24" fill="none" stroke="#a3e635" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></i>
+          <div><div class="t">Known limitations, in writing</div><div class="d">What doesn't work yet, before you clone</div></div></div>
+        <div class="lic"><span class="k">License</span><span class="v">MIT</span></div>
+      </div>
+    </div>
+  </div>
+</div>
