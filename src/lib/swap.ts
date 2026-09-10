@@ -10,9 +10,27 @@ const ADDRESS_THIS = "0x0000000000000000000000000000000000000002" as Address;
 
 const WETH = CONTRACTS.weth as Address;
 
+/**
+ * Canonical Permit2. The Universal Router does not pull ERC-20s with a plain
+ * allowance: it calls Permit2, which holds the approval on the token's behalf.
+ * Verified deployed on chain 4663, and its address is embedded in the router's
+ * own bytecode.
+ */
+export const PERMIT2 = "0x000000000022D473030F116dDEE9F6B43aC78BA3" as Address;
+
+export const permit2Abi = parseAbi([
+  "function allowance(address owner, address token, address spender) view returns (uint160 amount, uint48 expiration, uint48 nonce)",
+  "function approve(address token, address spender, uint160 amount, uint48 expiration)",
+]);
+
 export type SwapPlan = {
-  /** Router the input token must be approved against (null for native input). */
+  /** Contract the input token must be approved against (null for native input). */
   spender: Address | null;
+  /**
+   * True when `spender` is Permit2, which needs a second step: the ERC-20
+   * approval goes to Permit2, then Permit2 grants the router an allowance.
+   */
+  viaPermit2?: boolean;
   request: {
     address: Address;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -292,8 +310,10 @@ export function buildV4Swap({
   const commands = ("0x" + UR_V4_SWAP.toString(16).padStart(2, "0")) as Hex;
 
   return {
-    // Native input needs no approval; an ERC-20 input is pulled by the router.
-    spender: nativeIn ? null : (CONTRACTS.universalRouter as Address),
+    // Native input needs no approval. An ERC-20 input is pulled through
+    // Permit2, so that is what gets approved, not the router itself.
+    spender: nativeIn ? null : PERMIT2,
+    viaPermit2: !nativeIn,
     request: {
       address: CONTRACTS.universalRouter as Address,
       abi: universalRouterAbi,

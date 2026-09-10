@@ -11,11 +11,14 @@ import { useQuote } from "@/hooks/use-quote";
 import { useTokenBalance } from "@/hooks/use-token-balance";
 import { formatUnits, parseUnits } from "@/lib/format";
 import { NATIVE_TOKEN, USDG_TOKEN, sameToken, type TokenInfo } from "@/lib/tokens";
-import { applySlippage, buildSwap, buildV4Swap, gasReserve } from "@/lib/swap";
+import { applySlippage, buildSwap, buildV4Swap, gasReserve, PERMIT2, permit2Abi } from "@/lib/swap";
 import { erc20Abi } from "@/lib/abi";
-import { txUrl } from "@/lib/chain";
+import { CONTRACTS, txUrl } from "@/lib/chain";
 import { CASHBACK_BPS } from "@/lib/rewards";
 import type { Route } from "@/lib/quote";
+
+const MAX_UINT256 = (1n << 256n) - 1n;
+const MAX_UINT160 = (1n << 160n) - 1n;
 
 const SLIPPAGE_PRESETS = [10, 50, 100, 300];
 
@@ -140,11 +143,14 @@ export function SwapCard({ buy }: { buy?: TokenInfo | null } = {}) {
 
         if (allowance < amountIn) {
           setBusy("approving");
+          // Permit2 is approved once for the max, because the per-swap limit is
+          // set on the second step below rather than here.
+          const approveAmount = plan.viaPermit2 ? MAX_UINT256 : amountIn;
           const approveHash = await writeContractAsync({
             address: tokenIn.address as Address,
             abi: erc20Abi,
             functionName: "approve",
-            args: [plan.spender, amountIn],
+            args: [plan.spender, approveAmount],
           });
           push({
             tone: "info",
@@ -153,6 +159,41 @@ export function SwapCard({ buy }: { buy?: TokenInfo | null } = {}) {
             href: { label: "View transaction", url: txUrl(approveHash) },
           });
           await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        }
+      }
+
+      // Second step for V4: Permit2 holds the token approval, so the router
+      // still needs an allowance inside Permit2 before it can pull anything.
+      if (plan.viaPermit2) {
+        const [permitAmount, permitExpiry] = await publicClient.readContract({
+          address: PERMIT2,
+          abi: permit2Abi,
+          functionName: "allowance",
+          args: [address, tokenIn.address as Address, CONTRACTS.universalRouter as Address],
+        });
+
+        const nowSec = Math.floor(Date.now() / 1000);
+        if (BigInt(permitAmount) < amountIn || Number(permitExpiry) <= nowSec) {
+          setBusy("approving");
+          const expiration = nowSec + 30 * 24 * 60 * 60; // 30 days
+          const permitHash = await writeContractAsync({
+            address: PERMIT2,
+            abi: permit2Abi,
+            functionName: "approve",
+            args: [
+              tokenIn.address as Address,
+              CONTRACTS.universalRouter as Address,
+              MAX_UINT160,
+              expiration,
+            ],
+          });
+          push({
+            tone: "info",
+            title: "Authorising the router",
+            body: `Permit2 grant for ${tokenIn.symbol}.`,
+            href: { label: "View transaction", url: txUrl(permitHash) },
+          });
+          await publicClient.waitForTransactionReceipt({ hash: permitHash });
         }
       }
 
