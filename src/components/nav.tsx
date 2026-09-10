@@ -13,6 +13,7 @@ const LINKS = [
   { href: "/portfolio", label: "Portfolio" },
   { href: "/rewards", label: "Rewards" },
   { href: "/engine", label: "Engine" },
+  { href: "/roadmap", label: "Roadmap" },
 ];
 
 export function Nav() {

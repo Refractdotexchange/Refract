@@ -52,6 +52,9 @@ export function Footer() {
           <Link href="/engine" style={{ color: "var(--muted)", textDecoration: "none" }}>
             Engine
           </Link>
+          <Link href="/roadmap" style={{ color: "var(--muted)", textDecoration: "none" }}>
+            Roadmap
+          </Link>
           <a
             href={EXPLORER}
             target="_blank"
