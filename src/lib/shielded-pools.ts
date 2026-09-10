@@ -21,28 +21,14 @@ export type ShieldedPool = {
 
 export const SHIELDED_POOLS: ShieldedPool[] = [
   {
-    id: "eth-0.1",
-    label: "0.1 ETH",
+    id: "eth-0.001",
+    label: "0.001 ETH",
     token: "0x0000000000000000000000000000000000000000",
-    denomination: 100000000000000000n,
-    address: null,
-    deployBlock: 0n,
-  },
-  {
-    id: "eth-1",
-    label: "1 ETH",
-    token: "0x0000000000000000000000000000000000000000",
-    denomination: 1000000000000000000n,
-    address: null,
-    deployBlock: 0n,
-  },
-  {
-    id: "eth-10",
-    label: "10 ETH",
-    token: "0x0000000000000000000000000000000000000000",
-    denomination: 10000000000000000000n,
-    address: null,
-    deployBlock: 0n,
+    denomination: 1000000000000000n,
+    // Deployed on 4663. Verifier 0xBAe4536F…, hasher 0x1fda72a7…, both
+    // confirmed to match the compiled circuit before wiring this in.
+    address: "0xFAE178987b368e4C76A71b83E602C5AEC64d1220",
+    deployBlock: 59512541n,
   },
 ];
 
