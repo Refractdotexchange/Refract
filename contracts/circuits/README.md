@@ -33,12 +33,40 @@ snarkjs zkey export verificationkey withdraw_final.zkey verification_key.json
 snarkjs zkey export solidityverifier withdraw_final.zkey ../src/Verifier.sol
 ```
 
+## Running your own contribution
+
+```bash
+./ceremony.sh "your name or handle"
+```
+
+That adds your randomness to the proving key, verifies the result against the
+circuit, rebuilds `src/Verifier.sol` and the browser artefact, and regenerates
+the proof fixtures so `forge test` stays green.
+
+The random number it generates is toxic waste: anyone holding a copy can forge
+withdrawals. The script keeps it in memory, never writes it to disk and never
+prints it. Close the terminal afterwards.
+
+Run it on more than one machine, or hand it to people you know and have them
+run it too. **The pool is safe as long as any single contributor's randomness
+is gone**, so every extra contribution only adds security. A contributor cannot
+weaken the setup even if they try, which is why accepting a contribution from
+someone you do not know costs you nothing.
+
+Publish the contribution hashes the script prints. That is what lets anyone
+check the history rather than take your word for it.
+
 ## About the trusted setup
 
 Groth16 needs a per-circuit ceremony. Whoever runs it can forge proofs if they
 keep their toxic waste, which for a pool holding user funds means **forging
 withdrawals**.
 
-For mainnet this has to be a multi-party ceremony with published contributions,
-so no single participant can cheat. A setup run by one person on one laptop is
-fine for testing and unacceptable for real deposits. Publish the transcript.
+For mainnet this has to be a multi-party ceremony with published contributions.
+A setup run by one person on one laptop is fine for testing and weak for real
+deposits, not because that person is dishonest but because nobody else can
+verify the waste is gone. With several contributors the claim becomes checkable:
+compromise would require all of them to have cheated and coordinated.
+
+The contributions currently in this key are local test runs. **Replace them
+before any real deposit.**
