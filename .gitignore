@@ -44,3 +44,6 @@ contracts/circuits/*_js
 contracts/circuits/withdraw_js
 contracts/circuits/*.sym
 contracts/circuits/prove-test.mjs
+
+# Ceremony output: regenerate from the real MPC ceremony, never ship the local one
+public/zk/withdraw.zkey

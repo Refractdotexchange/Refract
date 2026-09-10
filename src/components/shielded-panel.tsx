@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount } from "wagmi";
-import { createNote, serialiseNote, parseNote, type Note } from "@/lib/shielded";
-import { SHIELDED_POOLS, type ShieldedPool } from "@/lib/shielded-pools";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import type { Address } from "viem";
+import { createNote, serialiseNote, parseNote, toHex32, type Note } from "@/lib/shielded";
+import { SHIELDED_POOLS, isPoolLive, type ShieldedPool } from "@/lib/shielded-pools";
+import { shieldedPoolAbi } from "@/lib/pool-abi";
+import { fetchLeaves } from "@/lib/pool-events";
+import { proveWithdrawal } from "@/lib/prove";
+import { txUrl } from "@/lib/chain";
 import { useToast } from "./toast";
 
 type Tab = "deposit" | "withdraw";
@@ -58,10 +63,56 @@ function Deposit({
   setPool: (p: ShieldedPool) => void;
 }) {
   const { isConnected } = useAccount();
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
   const { push } = useToast();
   const [note, setNote] = useState<Note | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [depositing, setDepositing] = useState(false);
+
+  const live = isPoolLive(pool);
+
+  async function submitDeposit() {
+    if (!note || !pool.address || !publicClient) return;
+    setDepositing(true);
+    try {
+      const hash = await writeContractAsync({
+        address: pool.address,
+        abi: shieldedPoolAbi,
+        functionName: "deposit",
+        args: [toHex32(note.commitment)],
+        value: pool.denomination,
+      });
+      push({
+        tone: "info",
+        title: "Deposit submitted",
+        body: "Keep your note safe until it confirms.",
+        href: { label: "View transaction", url: txUrl(hash) },
+      });
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      if (receipt.status === "success") {
+        push({
+          tone: "success",
+          title: "Shielded",
+          body: "Your deposit is in the pool. The note is the only way to spend it.",
+          href: { label: "View transaction", url: txUrl(hash) },
+        });
+      } else {
+        push({ tone: "error", title: "Deposit reverted", body: "No funds were moved." });
+      }
+    } catch (e) {
+      const msg = String(e);
+      const rejected = /User rejected|denied|rejected the request/i.test(msg);
+      push({
+        tone: rejected ? "info" : "error",
+        title: rejected ? "Cancelled in wallet" : "Deposit failed",
+        body: rejected ? "Nothing was sent. Your note is still valid." : "Your note is unused, so nothing is lost.",
+      });
+    } finally {
+      setDepositing(false);
+    }
+  }
 
   const serialised = note ? serialiseNote(note) : "";
 
@@ -199,17 +250,26 @@ function Deposit({
 
           <button
             className="btn btn-primary btn-lg"
-            disabled={!saved || !isConnected}
+            disabled={!saved || !isConnected || !live || depositing}
+            onClick={submitDeposit}
             title={!isConnected ? "Connect a wallet first" : undefined}
           >
-            {!isConnected ? "Connect wallet to deposit" : `Deposit ${pool.label}`}
+            {depositing && <span className="spinner" />}
+            {depositing
+              ? "Confirm in wallet"
+              : !live
+                ? "Pool not deployed yet"
+                : !isConnected
+                  ? "Connect wallet to deposit"
+                  : `Deposit ${pool.label}`}
           </button>
 
-          <p className="mono" style={{ fontSize: 10.5, color: "var(--faint)", marginTop: 12, lineHeight: 1.6 }}>
-            Awaiting pool deployment. The note above is real and generated in
-            your browser; the deposit button activates once the pool contract is
-            live on 4663.
-          </p>
+          {!live && (
+            <p className="mono" style={{ fontSize: 10.5, color: "var(--faint)", marginTop: 12, lineHeight: 1.6 }}>
+              The note above is real and was generated in your browser. Deposits
+              open once this pool is deployed on 4663.
+            </p>
+          )}
         </>
       )}
     </div>
@@ -220,11 +280,101 @@ function Deposit({
 
 function Withdraw() {
   const { push } = useToast();
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
   const [raw, setRaw] = useState("");
   const [recipient, setRecipient] = useState("");
   const [note, setNote] = useState<Note | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
+  const [stage, setStage] = useState<string | null>(null);
+
+  const pool = note ? SHIELDED_POOLS.find((p) => p.id === note.pool) : undefined;
+  const live = pool ? isPoolLive(pool) : false;
+
+  /**
+   * Prove and withdraw. The proof is built here in the browser, so the note's
+   * secret never leaves the page; only the proof and the nullifier go on-chain.
+   */
+  async function submitWithdraw() {
+    if (!note || !pool?.address || !publicClient) return;
+    setError(null);
+    try {
+      setStage("Reading the pool");
+      const spent = await publicClient.readContract({
+        address: pool.address,
+        abi: shieldedPoolAbi,
+        functionName: "nullifierSpent",
+        args: [toHex32(note.nullifierHash)],
+      });
+      if (spent) throw new Error("This note has already been spent.");
+
+      const leaves = await fetchLeaves(publicClient, pool.address, pool.deployBlock);
+
+      const proof = await proveWithdrawal({
+        note,
+        leaves,
+        recipient: recipient.trim() as Address,
+        onProgress: setStage,
+      });
+
+      // A proof is built against a specific root, and the contract only keeps
+      // the last 30. Checking here turns a confusing on-chain revert into a
+      // clear "try again".
+      const known = await publicClient.readContract({
+        address: pool.address,
+        abi: shieldedPoolAbi,
+        functionName: "isKnownRoot",
+        args: [proof.root],
+      });
+      if (!known) throw new Error("The pool moved on while proving. Try again.");
+
+      setStage("Waiting for your wallet");
+      const hash = await writeContractAsync({
+        address: pool.address,
+        abi: shieldedPoolAbi,
+        functionName: "withdraw",
+        args: [
+          proof.a,
+          proof.b,
+          proof.c,
+          proof.root,
+          proof.nullifierHash,
+          recipient.trim() as Address,
+          "0x0000000000000000000000000000000000000000",
+          0n,
+        ],
+      });
+      push({
+        tone: "info",
+        title: "Withdrawal submitted",
+        href: { label: "View transaction", url: txUrl(hash) },
+      });
+
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      if (receipt.status === "success") {
+        push({
+          tone: "success",
+          title: "Withdrawn",
+          body: `${pool.label} sent. This note is now spent.`,
+          href: { label: "View transaction", url: txUrl(hash) },
+        });
+        setRaw("");
+        setNote(null);
+      } else {
+        push({ tone: "error", title: "Withdrawal reverted", body: "Your note is unspent." });
+      }
+    } catch (e) {
+      const msg = String((e as Error).message ?? e);
+      const rejected = /User rejected|denied|rejected the request/i.test(msg);
+      setError(rejected ? null : msg.slice(0, 180));
+      if (rejected) {
+        push({ tone: "info", title: "Cancelled in wallet", body: "Your note is still unspent." });
+      }
+    } finally {
+      setStage(null);
+    }
+  }
 
   async function check() {
     setChecking(true);
@@ -301,14 +451,24 @@ function Withdraw() {
       <button
         className="btn btn-primary btn-lg"
         style={{ marginTop: 10 }}
-        disabled={!note || !recipientValid}
+        disabled={!note || !recipientValid || !live || stage !== null}
+        onClick={submitWithdraw}
       >
-        {!note ? "Check your note first" : !recipientValid ? "Enter a recipient" : "Generate proof and withdraw"}
+        {stage && <span className="spinner" />}
+        {stage
+          ? stage
+          : !note
+            ? "Check your note first"
+            : !live
+              ? "Pool not deployed yet"
+              : !recipientValid
+                ? "Enter a recipient"
+                : "Generate proof and withdraw"}
       </button>
 
       <p className="mono" style={{ fontSize: 10.5, color: "var(--faint)", marginTop: 12, lineHeight: 1.6 }}>
-        Proving takes a few seconds and happens entirely in your browser.
-        Awaiting pool deployment on 4663.
+        Proving runs entirely in your browser and takes a few seconds. The
+        proving key is about 5MB and downloads the first time you withdraw.
       </p>
     </div>
   );

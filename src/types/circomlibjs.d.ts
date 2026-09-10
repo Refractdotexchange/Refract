@@ -16,3 +16,19 @@ declare module "circomlibjs" {
     createCode(nInputs: number): string;
   };
 }
+
+/**
+ * snarkjs ships no types either. Only groth16.fullProve is used, and it is
+ * typed loosely on purpose: the proof shape is converted immediately in
+ * prove.ts, so a stricter type here would just be a second place to update.
+ */
+declare module "snarkjs" {
+  export const groth16: {
+    fullProve(
+      input: Record<string, unknown>,
+      wasmPath: string,
+      zkeyPath: string,
+    ): Promise<{ proof: unknown; publicSignals: string[] }>;
+    verify(vk: unknown, publicSignals: string[], proof: unknown): Promise<boolean>;
+  };
+}
