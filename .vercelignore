@@ -6,3 +6,7 @@ video
 # Foundry project: source is tracked in git but the app build does not need it,
 # and lib/ plus out/ are large.
 contracts
+
+# Local secrets: never uploaded
+.env
+.env*.local

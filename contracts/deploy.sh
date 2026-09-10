@@ -29,14 +29,31 @@ printf "  denomination  %s wei (%s ETH)\n" "$DENOM" "$(python3 -c "print(f'{int(
 echo "  est. gas      ~6.4M, roughly 0.001 ETH"
 echo "  ─────────────────────────────────────────────"
 echo
-echo "  You will be prompted for a private key. It is read straight into forge"
-echo "  and never touches disk or shell history."
-echo
+# Prefer the burner key in .env.local when it exists, so the key is not retyped
+# on every run. That file is gitignored and excluded from the Vercel upload.
+ENVFILE="../.env.local"
+if [ -f "$ENVFILE" ] && grep -q "^DEPLOY_PRIVATE_KEY=" "$ENVFILE"; then
+  KEY=$(grep "^DEPLOY_PRIVATE_KEY=" "$ENVFILE" | cut -d= -f2)
+  ADDR=$(grep "^DEPLOY_ADDRESS=" "$ENVFILE" | cut -d= -f2)
+  BAL=$(cast balance "$ADDR" --rpc-url "$RPC" 2>/dev/null || echo 0)
+  echo "  deployer      $ADDR"
+  printf "  balance       %s ETH\n" "$(python3 -c "print(f'{int('${BAL:-0}')/1e18:.6f}')")"
+  echo
+  if [ "${BAL:-0}" = "0" ]; then
+    echo "  This wallet has no ETH on 4663. Send it about 0.002 ETH and rerun." >&2
+    exit 1
+  fi
+  KEYARG=(--private-key "$KEY")
+else
+  echo "  No .env.local found. You will be prompted for a private key."
+  echo
+  KEYARG=(--interactive)
+fi
 
 forge create src/DeployShielded.sol:DeployShielded \
   --rpc-url "$RPC" \
   --broadcast \
-  --interactive \
+  "${KEYARG[@]}" \
   --constructor-args "$ROUTER" "$TOKEN" "$DENOM" \
   | tee /tmp/refract-deploy.log
 
