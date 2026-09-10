@@ -2,3 +2,7 @@
 node_modules
 # Separate Remotion project with its own package.json; not part of this build.
 video
+
+# Foundry project: source is tracked in git but the app build does not need it,
+# and lib/ plus out/ are large.
+contracts
