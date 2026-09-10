@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/", label: "Swap" },
   { href: "/pools", label: "Pools" },
   { href: "/portfolio", label: "Portfolio" },
+  { href: "/private", label: "Private" },
   { href: "/rewards", label: "Rewards" },
   { href: "/engine", label: "Engine" },
   { href: "/roadmap", label: "Roadmap" },

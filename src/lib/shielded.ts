@@ -7,7 +7,6 @@
  * The UI has to say that clearly and this file is written on that assumption.
  */
 
-import { buildPoseidon } from "circomlibjs";
 
 /** BN254 scalar field. Every value fed to Poseidon must be below this. */
 export const FIELD_SIZE =
@@ -22,11 +21,18 @@ export type Note = {
   pool: string;
 };
 
-let poseidonPromise: ReturnType<typeof buildPoseidon> | null = null;
+type PoseidonFn = Awaited<ReturnType<typeof import("circomlibjs").buildPoseidon>>;
+let poseidonPromise: Promise<PoseidonFn> | null = null;
 
-/** Poseidon is ~1MB of WASM, so it is built once and shared. */
-async function getPoseidon() {
-  if (!poseidonPromise) poseidonPromise = buildPoseidon();
+/**
+ * Poseidon is about a megabyte of WASM. Imported dynamically so the page
+ * paints first and the crypto loads only when a note is actually needed,
+ * rather than being paid for by everyone who visits.
+ */
+async function getPoseidon(): Promise<PoseidonFn> {
+  if (!poseidonPromise) {
+    poseidonPromise = import("circomlibjs").then((m) => m.buildPoseidon());
+  }
   return poseidonPromise;
 }
 
