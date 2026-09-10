@@ -1,0 +1,117 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;overflow:hidden;background:#000}
+  .stage{position:relative;width:1600px;height:900px;padding:74px 84px;background:
+    radial-gradient(ellipse 58% 96% at 74% 48%, rgba(163,230,53,.15), transparent 60%),
+    radial-gradient(ellipse 44% 76% at 10% 38%, rgba(121,181,32,.07), transparent 64%),
+    #000;}
+  .grid{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(163,230,53,.06) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(163,230,53,.06) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(ellipse 80% 96% at 50% 50%,#000 26%,transparent 82%);}
+
+  .inner{position:relative;z-index:2;display:flex;gap:70px;height:100%;align-items:center}
+  .left{width:660px}
+  .right{flex:1}
+
+  .kick{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.28em;
+        text-transform:uppercase;color:#67715f;margin-bottom:26px}
+  .head{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
+        font-size:96px;line-height:.95;letter-spacing:-.05em;color:#f2f5ee}
+  .head b{background:linear-gradient(96deg,#f8fff0,#e6ffb3 24%,#c9f56e 54%,#a3e635);
+          -webkit-background-clip:text;background-clip:text;color:transparent}
+  .note{margin-top:32px;font-family:'Space Grotesk',sans-serif;font-size:26px;
+        color:#9ba695;line-height:1.5;max-width:540px}
+
+  /* the amount, redacted */
+  .card{background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.085);
+        border-radius:24px;padding:40px 44px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9)}
+  .cardtop{display:flex;align-items:center;gap:12px;margin-bottom:30px;
+           font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.2em;
+           text-transform:uppercase;color:#67715f}
+  .dot{width:8px;height:8px;border-radius:2px;background:#a3e635;box-shadow:0 0 10px #a3e635}
+
+  .row{display:flex;align-items:center;justify-content:space-between;gap:26px;
+       padding:22px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+  .row:last-child{border-bottom:0;padding-bottom:0}
+  .lbl{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:27px;color:#9ba695}
+  .row.keep .lbl{color:#f2f5ee}
+  .amt{display:flex;align-items:center;gap:9px}
+  .blk{height:31px;border-radius:6px;background:linear-gradient(180deg,#39421f,#242a14);
+       border:1px solid rgba(163,230,53,.24)}
+  .row.keep .blk{background:linear-gradient(180deg,#5c7a1c,#3d5212);
+                 border-color:rgba(163,230,53,.5);box-shadow:0 0 18px -4px rgba(163,230,53,.5)}
+  .unit{font-family:'IBM Plex Mono',monospace;font-size:25px;color:#5e6656;margin-left:5px}
+  .row.keep .unit{color:#9ba695}
+  .tag{font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.13em;
+       color:#0b1400;background:#a3e635;border-radius:999px;padding:6px 13px;font-weight:600}
+
+  .foot{position:absolute;left:84px;right:84px;bottom:66px;display:flex;
+        align-items:flex-end;justify-content:space-between;z-index:2}
+  .url{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:34px;
+       letter-spacing:-.02em;color:#f2f5ee}
+  .meta{margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:15px;
+        letter-spacing:.19em;text-transform:uppercase;color:#67715f}
+  .soon{font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.3em;
+        text-transform:uppercase;color:#a3e635;border:1px solid rgba(163,230,53,.4);
+        border-radius:999px;padding:12px 26px}
+</style>
+<div class="stage">
+  <div class="grid"></div>
+  <div class="inner">
+    <div class="left">
+      <div class="kick">Shielded pool &middot; next</div>
+      <div class="head">Even the<br><b>amount</b>.</div>
+      <div class="note">One pool. Any size in, any part out.<br>The number never reaches the chain.</div>
+    </div>
+    <div class="right">
+      <div class="card">
+        <div class="cardtop"><span class="dot"></span> Note &middot; chain 4663</div>
+
+        <div class="row">
+          <div class="lbl">Deposit</div>
+          <div class="amt">
+            <span class="blk" style="width:26px"></span>
+            <span class="blk" style="width:15px"></span>
+            <span class="blk" style="width:34px"></span>
+            <span class="blk" style="width:20px"></span>
+            <span class="unit">ETH</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="lbl">Spend</div>
+          <div class="amt">
+            <span class="blk" style="width:18px"></span>
+            <span class="blk" style="width:29px"></span>
+            <span class="unit">ETH</span>
+          </div>
+        </div>
+
+        <div class="row keep">
+          <div class="lbl">Change</div>
+          <div class="amt">
+            <span class="blk" style="width:31px"></span>
+            <span class="blk" style="width:17px"></span>
+            <span class="blk" style="width:24px"></span>
+            <span class="unit">ETH</span>
+            <span class="tag" style="margin-left:14px">STILL SHIELDED</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">
+    <div>
+      <div class="url">refract.exchange</div>
+      <div class="meta">Zero&#8209;knowledge &middot; non&#8209;custodial</div>
+    </div>
+    <div class="soon">Soon</div>
+  </div>
+</div>
