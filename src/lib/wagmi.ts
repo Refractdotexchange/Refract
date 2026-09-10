@@ -13,7 +13,23 @@ export const wagmiConfig = createConfig({
   chains: [robinhoodChain],
   connectors: [injected({ shimDisconnect: true })],
   transports: {
-    [robinhoodChain.id]: fallback([http(RPC_PRIMARY), http(RPC_FALLBACK)]),
+    /*
+     * Timeouts and retries are set explicitly rather than left to defaults,
+     * to match the server client. A browser drops every open socket the
+     * moment the machine's network changes — a VPN toggling, WiFi
+     * reconnecting, waking from sleep — and Chrome reports that as
+     * ERR_NETWORK_CHANGED. Withdrawing spends several seconds proving and
+     * several more reading deposit events, so there is plenty of window for
+     * that to land mid-flight. Retrying absorbs it; without this a blip
+     * during a withdrawal surfaces as a failure the user cannot act on.
+     */
+    [robinhoodChain.id]: fallback(
+      [
+        http(RPC_PRIMARY, { timeout: 12_000, retryCount: 3, retryDelay: 250 }),
+        http(RPC_FALLBACK, { timeout: 12_000, retryCount: 3, retryDelay: 250 }),
+      ],
+      { rank: false },
+    ),
   },
   ssr: true,
 });

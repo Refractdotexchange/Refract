@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useReadContract, useSwitchChain, useWriteContract } from "wagmi";
 import type { Address } from "viem";
 import { createNote, serialiseNote, parseNote, toHex32, type Note } from "@/lib/shielded";
 import { SHIELDED_POOLS, isPoolLive, type ShieldedPool } from "@/lib/shielded-pools";
@@ -103,6 +103,91 @@ function NetworkNotice() {
         {isPending && <span className="spinner" />}
         Switch to 4663
       </button>
+    </div>
+  );
+}
+
+/**
+ * The pool's live anonymity set, stated plainly.
+ *
+ * This is the number that decides whether any of this works. A withdrawal
+ * proves "I own one of the commitments in this tree" and hides which one, so
+ * the privacy it buys is exactly one-in-however-many-are-in-there. At one
+ * deposit the proof is cryptographically perfect and reveals everything
+ * anyway, because there is nothing to be confused with.
+ *
+ * Burying that in a footnote would be dishonest. Someone about to shield real
+ * funds should see the actual number before they commit, not a claim about
+ * privacy in general.
+ */
+function AnonymitySet({ pool }: { pool: ShieldedPool }) {
+  const { data, isLoading } = useReadContract({
+    chainId: REQUIRED_CHAIN_ID,
+    address: pool.address ?? undefined,
+    abi: shieldedPoolAbi,
+    functionName: "nextIndex",
+    query: { enabled: Boolean(pool.address), refetchInterval: 30_000 },
+  });
+
+  if (!isPoolLive(pool)) return null;
+
+  const n = data === undefined ? null : Number(data);
+
+  // Thresholds are deliberately harsh. A mixer with a handful of deposits is
+  // worse than useless: it looks private while being trivially linkable.
+  const verdict =
+    n === null
+      ? null
+      : n <= 1
+        ? {
+            tone: "var(--ember)",
+            head: n === 0 ? "Nothing in this pool yet" : "Anonymity set: 1",
+            body:
+              n === 0
+                ? "You would be the only deposit. The first withdrawal from a pool of one is linkable to it by anyone, however good the proof is."
+                : "There is one deposit in this pool. A withdrawal right now can be matched to it by anyone reading the contract. The proof hides which commitment you spent, and there is only one, so it hides nothing. Wait for others before withdrawing.",
+          }
+        : n < 10
+          ? {
+              tone: "var(--ember)",
+              head: `Anonymity set: ${n}`,
+              body: `A withdrawal narrows you to one of ${n}. That is small enough to be worth very little. Treat this pool as not yet private.`,
+            }
+          : n < 50
+            ? {
+                tone: "var(--honey)",
+                head: `Anonymity set: ${n}`,
+                body: `A withdrawal narrows you to one of ${n}. Better, still thin. Timing matters a lot at this size: wait, and do not withdraw shortly after depositing.`,
+              }
+            : {
+                tone: "var(--olive)",
+                head: `Anonymity set: ${n}`,
+                body: `A withdrawal narrows you to one of ${n}. Timing and your choice of recipient now matter more than the pool size.`,
+              };
+
+  return (
+    <div
+      className="panel"
+      style={{
+        padding: "14px 16px",
+        marginBottom: 14,
+        borderColor: verdict ? `color-mix(in srgb, ${verdict.tone} 45%, transparent)` : "var(--line)",
+        background: verdict ? `color-mix(in srgb, ${verdict.tone} 8%, transparent)` : undefined,
+      }}
+    >
+      {isLoading || !verdict ? (
+        <span className="skeleton" style={{ display: "block", width: 180, height: 16 }} />
+      ) : (
+        <>
+          <div
+            className="font-display mono"
+            style={{ fontSize: 13.5, fontWeight: 700, color: verdict.tone, marginBottom: 6 }}
+          >
+            {verdict.head}
+          </div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6 }}>{verdict.body}</div>
+        </>
+      )}
     </div>
   );
 }
@@ -243,6 +328,8 @@ function Deposit({
           </button>
         ))}
       </div>
+
+      <AnonymitySet pool={pool} />
 
       <p style={{ color: "var(--muted)", fontSize: 13.5, lineHeight: 1.6, marginBottom: 18 }}>
         Every deposit in a pool is the same size, which is what makes them
@@ -505,6 +592,7 @@ function Withdraw() {
 
   return (
     <div className="panel panel-lit" style={{ padding: 22 }}>
+      {pool && <AnonymitySet pool={pool} />}
       <div className="kicker" style={{ marginBottom: 10 }}>
         Your note
       </div>
@@ -647,6 +735,16 @@ function HowItWorks() {
           <li>The amount, since each pool has one fixed size</li>
           <li>Timing, if you withdraw moments after depositing</li>
           <li>Anything, if you withdraw to the address you deposited from</li>
+          <li>
+            Whichever wallet pays gas for the withdrawal, which stays in the
+            transaction permanently. If it can be tied to you, so can the
+            withdrawal, no matter how large the pool is
+          </li>
+          <li>
+            Your network. The deposit list is read and the withdrawal is sent
+            over the same connection, so an RPC provider sees both ends even
+            though the chain does not
+          </li>
         </ul>
       </div>
     </aside>
