@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 import type { Address } from "viem";
 import { createNote, serialiseNote, parseNote, toHex32, type Note } from "@/lib/shielded";
 import { SHIELDED_POOLS, isPoolLive, type ShieldedPool } from "@/lib/shielded-pools";
@@ -9,6 +9,12 @@ import { shieldedPoolAbi } from "@/lib/pool-abi";
 import { fetchLeaves } from "@/lib/pool-events";
 import { proveWithdrawal } from "@/lib/prove";
 import { txUrl } from "@/lib/chain";
+import {
+  REQUIRED_CHAIN_ID,
+  WITHDRAW_GAS,
+  explainRevert,
+  isUserRejection,
+} from "@/lib/tx-guard";
 import { useToast } from "./toast";
 
 type Tab = "deposit" | "withdraw";
@@ -39,6 +45,8 @@ export function ShieldedPanel() {
         ))}
       </div>
 
+      <NetworkNotice />
+
       <div className="two-col" style={{ alignItems: "start", gap: 14 }}>
         <div>
           {tab === "deposit" ? (
@@ -53,6 +61,52 @@ export function ShieldedPanel() {
   );
 }
 
+/**
+ * Says so, loudly, when the wallet is on the wrong network.
+ *
+ * Everything else on this page is read through the app's own RPC and is always
+ * correct for 4663, so without this the interface looks perfectly healthy
+ * while the wallet is pointed somewhere else. Value sent from that state does
+ * not come back.
+ */
+function NetworkNotice() {
+  const { isConnected, chainId } = useAccount();
+  const { switchChainAsync, isPending } = useSwitchChain();
+
+  if (!isConnected || chainId === REQUIRED_CHAIN_ID) return null;
+
+  return (
+    <div
+      className="panel"
+      style={{
+        padding: "14px 16px",
+        marginBottom: 14,
+        background: "color-mix(in srgb, var(--ember) 10%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--ember) 45%, transparent)",
+        display: "flex",
+        gap: 12,
+        alignItems: "center",
+        flexWrap: "wrap",
+      }}
+    >
+      <span style={{ color: "var(--ember)", fontSize: 15, lineHeight: 1.2 }}>&#9888;</span>
+      <div style={{ flex: 1, minWidth: 220, fontSize: 13.5, lineHeight: 1.55 }}>
+        <b>Your wallet is on the wrong network.</b> These pools live on Robinhood
+        Chain (4663). Sending from another network would put your funds at an
+        address that has no contract on it, and they could not be recovered.
+      </div>
+      <button
+        className="btn"
+        disabled={isPending}
+        onClick={() => switchChainAsync({ chainId: REQUIRED_CHAIN_ID }).catch(() => {})}
+      >
+        {isPending && <span className="spinner" />}
+        Switch to 4663
+      </button>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ deposit */
 
 function Deposit({
@@ -62,8 +116,9 @@ function Deposit({
   pool: ShieldedPool;
   setPool: (p: ShieldedPool) => void;
 }) {
-  const { isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const publicClient = usePublicClient();
+  const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync } = useWriteContract();
   const { push } = useToast();
   const [note, setNote] = useState<Note | null>(null);
@@ -74,10 +129,32 @@ function Deposit({
   const live = isPoolLive(pool);
 
   async function submitDeposit() {
-    if (!note || !pool.address || !publicClient) return;
+    if (!note || !pool.address || !publicClient || !address) return;
     setDepositing(true);
     try {
+      /*
+       * A wallet sitting on another network will sign this quite happily. The
+       * pool address holds no contract there, so the ETH lands at an address
+       * nobody has the key to and is gone. Switch before spending, and let the
+       * error surface if the user declines rather than sending anyway.
+       */
+      if (chainId !== REQUIRED_CHAIN_ID) {
+        await switchChainAsync({ chainId: REQUIRED_CHAIN_ID });
+      }
+
+      // Simulated against the app's own RPC first, so a rejection arrives as a
+      // decoded contract error instead of whatever the wallet's node says.
+      await publicClient.simulateContract({
+        address: pool.address,
+        abi: shieldedPoolAbi,
+        functionName: "deposit",
+        args: [toHex32(note.commitment)],
+        value: pool.denomination,
+        account: address,
+      });
+
       const hash = await writeContractAsync({
+        chainId: REQUIRED_CHAIN_ID,
         address: pool.address,
         abi: shieldedPoolAbi,
         functionName: "deposit",
@@ -102,12 +179,13 @@ function Deposit({
         push({ tone: "error", title: "Deposit reverted", body: "No funds were moved." });
       }
     } catch (e) {
-      const msg = String(e);
-      const rejected = /User rejected|denied|rejected the request/i.test(msg);
+      const rejected = isUserRejection(e);
       push({
         tone: rejected ? "info" : "error",
         title: rejected ? "Cancelled in wallet" : "Deposit failed",
-        body: rejected ? "Nothing was sent. Your note is still valid." : "Your note is unused, so nothing is lost.",
+        body: rejected
+          ? "Nothing was sent. Your note is still valid."
+          : explainRevert(e, "Nothing was sent, so your note is unused."),
       });
     } finally {
       setDepositing(false);
@@ -280,7 +358,9 @@ function Deposit({
 
 function Withdraw() {
   const { push } = useToast();
+  const { address, chainId } = useAccount();
   const publicClient = usePublicClient();
+  const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync } = useWriteContract();
   const [raw, setRaw] = useState("");
   const [recipient, setRecipient] = useState("");
@@ -297,9 +377,16 @@ function Withdraw() {
    * secret never leaves the page; only the proof and the nullifier go on-chain.
    */
   async function submitWithdraw() {
-    if (!note || !pool?.address || !publicClient) return;
+    if (!note || !pool?.address || !publicClient || !address) return;
     setError(null);
     try {
+      // Same hazard as depositing: prove against 4663, then sign on whatever
+      // network the wallet happens to be on. Settle the network first.
+      if (chainId !== REQUIRED_CHAIN_ID) {
+        setStage("Switching network");
+        await switchChainAsync({ chainId: REQUIRED_CHAIN_ID });
+      }
+
       setStage("Reading the pool");
       const spent = await publicClient.readContract({
         address: pool.address,
@@ -329,21 +416,45 @@ function Withdraw() {
       });
       if (!known) throw new Error("The pool moved on while proving. Try again.");
 
-      setStage("Waiting for your wallet");
-      const hash = await writeContractAsync({
+      const args = [
+        proof.a,
+        proof.b,
+        proof.c,
+        proof.root,
+        proof.nullifierHash,
+        recipient.trim() as Address,
+        "0x0000000000000000000000000000000000000000" as Address,
+        0n,
+      ] as const;
+
+      /*
+       * Simulated here, through the app's own RPC, before the wallet is asked
+       * for anything. A withdrawal is the point of no return for a note, so it
+       * is worth knowing the call succeeds against a node we trust to be
+       * current rather than discovering it inside the wallet, where a failure
+       * arrives as an undecodable "internal error".
+       */
+      setStage("Checking the withdrawal");
+      await publicClient.simulateContract({
         address: pool.address,
         abi: shieldedPoolAbi,
         functionName: "withdraw",
-        args: [
-          proof.a,
-          proof.b,
-          proof.c,
-          proof.root,
-          proof.nullifierHash,
-          recipient.trim() as Address,
-          "0x0000000000000000000000000000000000000000",
-          0n,
-        ],
+        args,
+        account: address,
+      });
+
+      setStage("Waiting for your wallet");
+      const hash = await writeContractAsync({
+        chainId: REQUIRED_CHAIN_ID,
+        address: pool.address,
+        abi: shieldedPoolAbi,
+        functionName: "withdraw",
+        args,
+        // Fixed rather than estimated. Verifying a Groth16 proof runs the
+        // pairing precompiles, and some wallet nodes fail to estimate that and
+        // report an error with no revert data at all. Unused gas is not
+        // charged, so an ample limit costs nothing.
+        gas: WITHDRAW_GAS,
       });
       push({
         tone: "info",
@@ -365,9 +476,8 @@ function Withdraw() {
         push({ tone: "error", title: "Withdrawal reverted", body: "Your note is unspent." });
       }
     } catch (e) {
-      const msg = String((e as Error).message ?? e);
-      const rejected = /User rejected|denied|rejected the request/i.test(msg);
-      setError(rejected ? null : msg.slice(0, 180));
+      const rejected = isUserRejection(e);
+      setError(rejected ? null : explainRevert(e, "The withdrawal did not go through."));
       if (rejected) {
         push({ tone: "info", title: "Cancelled in wallet", body: "Your note is still unspent." });
       }
