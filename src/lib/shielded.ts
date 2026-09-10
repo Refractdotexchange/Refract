@@ -82,20 +82,30 @@ export function serialiseNote(note: Note): string {
 
 export async function parseNote(raw: string): Promise<Note> {
   const trimmed = raw.trim();
-  const parts = trimmed.split("-");
-  if (parts.length !== 3 || parts[0] !== NOTE_PREFIX) {
-    throw new Error("That does not look like a REFRACT note.");
+
+  /*
+   * Matched rather than split. Pool ids contain hyphens themselves
+   * ("eth-0.001"), so splitting on "-" gives a variable number of parts and
+   * rejects perfectly good notes. Anchoring the prefix and the 128 hex digits
+   * lets the id in the middle be anything.
+   */
+  const match = /^refract-(.+)-0x([0-9a-fA-F]{128})$/.exec(trimmed);
+  if (!match) {
+    // Say which half is wrong, so a truncated paste is distinguishable from
+    // something that was never a note.
+    if (!trimmed.startsWith(`${NOTE_PREFIX}-`)) {
+      throw new Error("That does not look like a REFRACT note.");
+    }
+    throw new Error("Note is malformed or truncated. Paste the whole thing.");
   }
-  const pool = parts[1];
-  const hex = parts[2].startsWith("0x") ? parts[2].slice(2) : parts[2];
-  if (hex.length !== 128 || !/^[0-9a-fA-F]+$/.test(hex)) {
-    throw new Error("Note is malformed or truncated.");
-  }
+
+  const [, pool, hex] = match;
   const nullifier = BigInt("0x" + hex.slice(0, 64));
   const secret = BigInt("0x" + hex.slice(64));
   if (nullifier >= FIELD_SIZE || secret >= FIELD_SIZE) {
     throw new Error("Note values are out of range.");
   }
+
   const [commitment, nullifierHash] = await Promise.all([
     poseidon([nullifier, secret]),
     poseidon([nullifier]),
