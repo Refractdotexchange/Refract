@@ -8,13 +8,14 @@ import {
   uniswapV3FactoryAbi,
 } from "./abi";
 import { cached, withRetry } from "./rpc";
+import { quoteV4, type PoolKey } from "./v4";
 
 export const NATIVE = zeroAddress as Address;
 const WETH = CONTRACTS.weth as Address;
 
 export type Route = {
   id: string;
-  protocol: "uniswap-v2" | "uniswap-v3";
+  protocol: "uniswap-v2" | "uniswap-v3" | "uniswap-v4";
   label: string;
   detail: string;
   /** Human-readable hop path, e.g. ["ETH", "USDG"]. */
@@ -22,6 +23,9 @@ export type Route = {
   amountOut: string;
   fee?: number;
   gasEstimate?: string;
+  /** Present on V4 routes: the pool this quote came from. */
+  poolKey?: PoolKey;
+  zeroForOne?: boolean;
 };
 
 export type QuoteResult = {
@@ -131,7 +135,11 @@ export async function quote(
   const [symIn, symOut] = await Promise.all([symbolOf(tokenIn), symbolOf(tokenOut)]);
   const needsHop = inR !== WETH && outR !== WETH;
 
-  const [v2Direct, v2Hop, v2PairExists, ...v3Results] = await Promise.all([
+  const [v4Result, v2Direct, v2Hop, v2PairExists, ...v3Results] = await Promise.all([
+    // V4 addresses native ETH directly, so it gets the caller's tokens rather
+    // than the WETH-substituted ones. Pons graduates launch tokens here, which
+    // makes this the only venue for a token that has just left its curve.
+    quoteV4(tokenIn, tokenOut, amountIn).catch(() => null),
     v2Quote([inR, outR], amountIn),
     needsHop ? v2Quote([inR, WETH, outR], amountIn) : Promise.resolve(null),
     withRetry(() =>
@@ -146,6 +154,24 @@ export async function quote(
   ]);
 
   const routes: Route[] = [];
+
+  if (v4Result) {
+    routes.push({
+      id: "v4",
+      protocol: "uniswap-v4",
+      label: "Uniswap V4",
+      detail:
+        v4Result.poolKey.hooks === zeroAddress
+          ? `${(v4Result.poolKey.fee / 10_000).toFixed(2)}% tier`
+          : "hooked pool",
+      hops: [symIn, symOut],
+      amountOut: v4Result.amountOut.toString(),
+      fee: v4Result.poolKey.fee,
+      gasEstimate: v4Result.gasEstimate.toString(),
+      poolKey: v4Result.poolKey,
+      zeroForOne: v4Result.zeroForOne,
+    });
+  }
 
   if (v2Direct && v2PairExists !== zeroAddress) {
     routes.push({
@@ -194,9 +220,11 @@ export async function quote(
     const probeIn = amountIn / 1000n;
     if (probeIn > 0n) {
       const probeOut =
-        best.protocol === "uniswap-v2"
-          ? await v2Quote(best.id === "v2-weth" ? [inR, WETH, outR] : [inR, outR], probeIn)
-          : (await v3Quote(inR, outR, best.fee ?? 3000, probeIn))?.amountOut ?? null;
+        best.protocol === "uniswap-v4"
+          ? (await quoteV4(tokenIn, tokenOut, probeIn).catch(() => null))?.amountOut ?? null
+          : best.protocol === "uniswap-v2"
+            ? await v2Quote(best.id === "v2-weth" ? [inR, WETH, outR] : [inR, outR], probeIn)
+            : (await v3Quote(inR, outR, best.fee ?? 3000, probeIn))?.amountOut ?? null;
 
       if (probeOut && probeOut > 0n) {
         // Compare unit prices by cross-multiplying rather than dividing first:

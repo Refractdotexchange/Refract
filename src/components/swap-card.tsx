@@ -11,7 +11,7 @@ import { useQuote } from "@/hooks/use-quote";
 import { useTokenBalance } from "@/hooks/use-token-balance";
 import { formatUnits, parseUnits } from "@/lib/format";
 import { NATIVE_TOKEN, USDG_TOKEN, sameToken, type TokenInfo } from "@/lib/tokens";
-import { applySlippage, buildSwap, gasReserve } from "@/lib/swap";
+import { applySlippage, buildSwap, buildV4Swap, gasReserve } from "@/lib/swap";
 import { erc20Abi } from "@/lib/abi";
 import { txUrl } from "@/lib/chain";
 import { CASHBACK_BPS } from "@/lib/rewards";
@@ -110,14 +110,24 @@ export function SwapCard({ buy }: { buy?: TokenInfo | null } = {}) {
     if (!active || !address || !publicClient) return;
 
     try {
-      const plan = buildSwap({
-        route: active,
-        tokenIn,
-        tokenOut,
-        amountIn,
-        minOut,
-        recipient: address,
-      });
+      // V4 goes through the Universal Router rather than SwapRouter02, and
+      // carries its own pool key from the quote.
+      const plan =
+        active.protocol === "uniswap-v4" && active.poolKey
+          ? buildV4Swap({
+              poolKey: active.poolKey,
+              zeroForOne: active.zeroForOne ?? true,
+              amountIn,
+              minOut,
+            })
+          : buildSwap({
+              route: active,
+              tokenIn,
+              tokenOut,
+              amountIn,
+              minOut,
+              recipient: address,
+            });
 
       // Approve only the exact amount this swap needs.
       if (plan.spender) {

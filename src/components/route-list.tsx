@@ -8,6 +8,7 @@ import { CurveFallback } from "./curve-fallback";
 const PROTOCOL_COLOR: Record<Route["protocol"], string> = {
   "uniswap-v2": "var(--brass)",
   "uniswap-v3": "var(--gold)",
+  "uniswap-v4": "var(--champagne)",
 };
 
 /**

@@ -1,4 +1,4 @@
-import { encodeFunctionData, type Address } from "viem";
+import { encodeAbiParameters, encodeFunctionData, parseAbi, zeroAddress, type Address, type Hex } from "viem";
 import { CONTRACTS } from "./chain";
 import { swapRouter02Abi, uniswapV2RouterAbi } from "./abi";
 import type { Route } from "./quote";
@@ -179,4 +179,127 @@ export function gasReserve(gasPrice: bigint): bigint {
   const FLOOR = 20_000_000_000_000n; // 0.00002 ETH
   const estimate = gasPrice * GAS_FOR_SWAP_PLUS_APPROVE * HEADROOM;
   return estimate > FLOOR ? estimate : FLOOR;
+}
+
+/* ---------- Uniswap V4 ---------------------------------------------------
+
+   V4 swaps do not go through a dedicated router. They are executed as a
+   command on the Universal Router, which unlocks the PoolManager and replays
+   a list of actions inside it.
+
+   The three actions below are the minimum for an exact-input single-hop swap:
+     SWAP_EXACT_IN_SINGLE  perform the swap
+     SETTLE_ALL            pay what we owe the pool
+     TAKE_ALL              collect what it owes us
+
+   Native ETH is the zero address here rather than WETH, so an ETH swap needs
+   no wrapping and carries its amount as msg.value.
+-------------------------------------------------------------------------- */
+
+const UR_V4_SWAP = 0x10;
+const ACTION_SWAP_EXACT_IN_SINGLE = 0x06;
+const ACTION_SETTLE_ALL = 0x0c;
+const ACTION_TAKE_ALL = 0x0f;
+
+export const universalRouterAbi = parseAbi([
+  "function execute(bytes commands, bytes[] inputs, uint256 deadline) payable",
+]);
+
+const poolKeyComponents = [
+  { name: "currency0", type: "address" },
+  { name: "currency1", type: "address" },
+  { name: "fee", type: "uint24" },
+  { name: "tickSpacing", type: "int24" },
+  { name: "hooks", type: "address" },
+] as const;
+
+type V4PoolKey = {
+  currency0: Address;
+  currency1: Address;
+  fee: number;
+  tickSpacing: number;
+  hooks: Address;
+};
+
+/** Encode the action list and its parameters for a single-hop exact-in swap. */
+function encodeV4Actions({
+  poolKey,
+  zeroForOne,
+  amountIn,
+  minOut,
+}: {
+  poolKey: V4PoolKey;
+  zeroForOne: boolean;
+  amountIn: bigint;
+  minOut: bigint;
+}): Hex {
+  const actions = ("0x" +
+    [ACTION_SWAP_EXACT_IN_SINGLE, ACTION_SETTLE_ALL, ACTION_TAKE_ALL]
+      .map((a) => a.toString(16).padStart(2, "0"))
+      .join("")) as Hex;
+
+  const currencyIn = zeroForOne ? poolKey.currency0 : poolKey.currency1;
+  const currencyOut = zeroForOne ? poolKey.currency1 : poolKey.currency0;
+
+  const swapParams = encodeAbiParameters(
+    [
+      {
+        type: "tuple",
+        components: [
+          { name: "poolKey", type: "tuple", components: poolKeyComponents },
+          { name: "zeroForOne", type: "bool" },
+          { name: "amountIn", type: "uint128" },
+          { name: "amountOutMinimum", type: "uint128" },
+          { name: "hookData", type: "bytes" },
+        ],
+      },
+    ],
+    [{ poolKey, zeroForOne, amountIn, amountOutMinimum: minOut, hookData: "0x" }],
+  );
+
+  const settle = encodeAbiParameters(
+    [{ type: "address" }, { type: "uint256" }],
+    [currencyIn, amountIn],
+  );
+  const take = encodeAbiParameters(
+    [{ type: "address" }, { type: "uint256" }],
+    [currencyOut, minOut],
+  );
+
+  return encodeAbiParameters(
+    [{ type: "bytes" }, { type: "bytes[]" }],
+    [actions, [swapParams, settle, take]],
+  );
+}
+
+/** Build a V4 swap as a Universal Router `execute` call. */
+export function buildV4Swap({
+  poolKey,
+  zeroForOne,
+  amountIn,
+  minOut,
+  deadlineSeconds = 1200,
+}: {
+  poolKey: V4PoolKey;
+  zeroForOne: boolean;
+  amountIn: bigint;
+  minOut: bigint;
+  deadlineSeconds?: number;
+}): SwapPlan {
+  const currencyIn = zeroForOne ? poolKey.currency0 : poolKey.currency1;
+  const nativeIn = currencyIn === zeroAddress;
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + deadlineSeconds);
+  const commands = ("0x" + UR_V4_SWAP.toString(16).padStart(2, "0")) as Hex;
+
+  return {
+    // Native input needs no approval; an ERC-20 input is pulled by the router.
+    spender: nativeIn ? null : (CONTRACTS.universalRouter as Address),
+    request: {
+      address: CONTRACTS.universalRouter as Address,
+      abi: universalRouterAbi,
+      functionName: "execute",
+      args: [commands, [encodeV4Actions({ poolKey, zeroForOne, amountIn, minOut })], deadline],
+      value: nativeIn ? amountIn : 0n,
+    },
+  };
 }

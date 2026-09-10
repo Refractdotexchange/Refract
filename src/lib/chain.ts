@@ -70,6 +70,7 @@ export const CONTRACTS = {
   swapRouter02: "0xCaf681a66D020601342297493863E78C959E5cb2",
   universalRouter: "0x8876789976decbfcbbbe364623c63652db8c0904",
   uniswapV4PoolManager: "0x8366a39CC670B4001A1121B8F6A443A643e40951",
+  uniswapV4Quoter: "0x8Dc178eFB8111BB0973Dd9d722ebeFF267c98F94",
   multicall3: "0xcA11bde05977b3631167028862bE2a173976CA11",
   // Launchpads that seed new bonding-curve pools on this chain.
   axiomLaunchFactory: "0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e",
