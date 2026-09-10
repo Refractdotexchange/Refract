@@ -107,6 +107,30 @@ export const PHASES: Phase[] = [
       "This is the gate. Cashback has no funding source until fees exist, which is why the Rewards page says accrual is real but distribution is not. Everything in later phases depends on this one, and it is blocked on an audit rather than on effort.",
   },
   {
+    n: "02b",
+    title: "Private swaps",
+    status: "next",
+    summary:
+      "A shielded vault on chain 4663. Funds are pooled so that a swap between two users never touches the chain, which is what makes it private from observers, MEV and chain analysis.",
+    items: [
+      {
+        label: "Vault contract",
+        note: "Written and tested: 21 tests including a fuzz run proving recovery can never exceed what you deposited. Not yet audited or deployed.",
+      },
+      {
+        label: "Permissionless escape hatch",
+        note: "If the operator goes silent for the escape delay, any depositor recovers up to their own net deposit without asking anyone.",
+      },
+      {
+        label: "Off-chain balances and internal swaps",
+        note: "The part that makes trades private, and the part that makes the vault custodial.",
+      },
+      { label: "Audit before any mainnet deposit" },
+    ],
+    gate:
+      "The vault is custodial and we will not pretend otherwise. Pooled funds, balances tracked off-chain, and a normal withdrawal needs an operator signature. The router stays non-custodial and using the vault is opt-in, so nobody is moved into a different trust model without choosing it.",
+  },
+  {
     n: "03",
     title: "Cashback becomes claimable",
     status: "planned",

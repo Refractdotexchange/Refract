@@ -171,11 +171,32 @@ pool. Independent scan phases are overlapped.
 
 ## Security
 
-REFRACT is non-custodial. It never takes custody of funds — every trade is signed in the user's own
+The REFRACT router is non-custodial. It never takes custody of funds: every trade is signed in the user's own
 wallet, approvals are scoped to the exact amount of each swap, and the routers are the canonical
 Uniswap deployments on chain 4663.
 
 Found something? Open an issue, or reach us on X at [@RefractHq_](https://x.com/RefractHq_).
+
+## Custody
+
+Two products, two different trust models, stated plainly because the difference
+matters more than the marketing.
+
+**The router is non-custodial.** It never holds funds. Approvals are scoped to
+the exact amount of each swap and every trade is signed in your own wallet.
+
+**The privacy vault is custodial.** Funds are pooled so that swaps between users
+never touch the chain, which is what makes them private. Individual balances are
+tracked off-chain by the operator, and a normal withdrawal requires an operator
+signature. If that key is lost or the operator stops signing, normal withdrawals
+stop working.
+
+The vault contract mitigates that rather than ignoring it: every deposit is
+recorded on-chain, and if the operator goes silent for the escape delay, any
+depositor can permissionlessly recover up to their own net deposit without
+anyone's permission. There is no owner function that moves user funds.
+
+Using the vault is opt-in. Using the router does not require it.
 
 ## Disclaimer
 

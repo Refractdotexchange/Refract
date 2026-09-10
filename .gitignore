@@ -30,3 +30,9 @@ next-env.d.ts
 # It is excluded from the app build via tsconfig and .vercelignore instead.
 video/node_modules
 video/out
+
+# foundry
+contracts/out
+contracts/cache
+contracts/lib
+contracts/broadcast

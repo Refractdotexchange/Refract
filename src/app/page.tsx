@@ -51,7 +51,7 @@ export default function SwapPage() {
           >
             REFRACT splits your swap across every venue deployed on chain 4663: Uniswap V2, all four
             V3 fee tiers, and fresh bonding-curve launches, then routes it through the one that
-            pays out most. Non-custodial, signed in your own wallet, and a slice of every fee comes
+            pays out most. The router never holds your funds: every trade is signed in your own wallet, and a slice of every fee comes
             back to you.
           </p>
 

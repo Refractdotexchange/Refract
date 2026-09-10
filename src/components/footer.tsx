@@ -104,7 +104,7 @@ export function Footer() {
           lineHeight: 1.7,
         }}
       >
-        REFRACT is an independent, non-custodial interface. It never takes custody of funds. Every
+        The REFRACT router is non-custodial: it never takes custody of funds. Every
         trade is signed in your own wallet. Nothing here is financial advice; tokens launched on a
         permissionless curve carry total-loss risk. Not affiliated with Robinhood Markets, Inc.,
         Uniswap Labs, or any token issuer listed.
