@@ -6,7 +6,7 @@ test = "test"
 solc_version = "0.8.24"
 optimizer = true
 optimizer_runs = 200
-via_ir = false
+fs_permissions = [{ access = "read", path = "./artifacts" }]
 
 [rpc_endpoints]
 robinhood = "https://rpc.mainnet.chain.robinhood.com"

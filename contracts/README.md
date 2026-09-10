@@ -1,6 +1,23 @@
-# RefractVault
+# REFRACT contracts
 
-Shielded vault for private swaps on Robinhood Chain (4663).
+Two designs for private swaps on Robinhood Chain (4663). They differ on one
+axis only, and it is the axis that matters: **who can move your money.**
+
+| | `RefractShielded` | `RefractVault` |
+| --- | --- | --- |
+| Custody | **Nobody but you** | Operator holds funds |
+| Withdrawal | ZK proof, no permission needed | Operator signature |
+| Private from the operator | **Yes** | No |
+| Status | Written, 15 tests pass, needs circuit + audit | Written, 21 tests pass, needs audit |
+
+**`RefractShielded` is the one to ship.** The vault exists as a faster fallback
+and is kept here so the tradeoff is documented rather than hidden.
+
+---
+
+# RefractVault (fallback)
+
+Custodial vault for private swaps.
 
 ## Read this first
 

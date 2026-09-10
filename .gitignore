@@ -36,3 +36,8 @@ contracts/out
 contracts/cache
 contracts/lib
 contracts/broadcast
+contracts/artifacts
+contracts/circuits/*.ptau
+contracts/circuits/*.zkey
+contracts/circuits/*.r1cs
+contracts/circuits/*_js
