@@ -41,3 +41,6 @@ contracts/circuits/*.ptau
 contracts/circuits/*.zkey
 contracts/circuits/*.r1cs
 contracts/circuits/*_js
+contracts/circuits/withdraw_js
+contracts/circuits/*.sym
+contracts/circuits/prove-test.mjs
