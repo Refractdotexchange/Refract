@@ -5,17 +5,27 @@ import { defineChain, createPublicClient, http, fallback } from "viem";
  */
 export const RPC_PRIMARY =
   process.env.NEXT_PUBLIC_RPC_URL ?? "https://rpc.mainnet.chain.robinhood.com";
-export const RPC_FALLBACK =
-  process.env.RPC_FALLBACK_URL ?? "https://robinhood-rpc.publicnode.com";
-
 /**
- * Authenticated RPC used only by server code.
+ * Secondary endpoint, deliberately empty by default.
  *
- * Deliberately NOT prefixed NEXT_PUBLIC_: anything with that prefix is inlined
- * into the browser bundle, so a keyed endpoint placed there would hand its API
- * key to every visitor. All the heavy work (log scans, multicalls, quoting) is
- * server-side, so the browser keeps using the public RPC and the key stays put.
+ * The obvious candidate, robinhood-rpc.publicnode.com, answers eth_call and
+ * accepts transactions but refuses eth_getLogs over historical ranges without
+ * a paid token:
+ *
+ *   -32602  Archive requests require a personal token.
+ *
+ * viem surfaces -32602 as "Invalid parameters were provided to the RPC
+ * method", which sends whoever reads it looking for a malformed request that
+ * does not exist. Worse, the app cannot work without log queries: a shielded
+ * balance is rebuilt from events, so every fall-through to that endpoint broke
+ * the one screen the user came for, at exactly the moment the primary was
+ * struggling and a fallback was supposed to help.
+ *
+ * A fallback that cannot serve the calls this app depends on is not
+ * redundancy. Set RPC_FALLBACK_URL to a real archive endpoint to restore it.
  */
+export const RPC_FALLBACK = process.env.RPC_FALLBACK_URL ?? "";
+
 export const RPC_SERVER = process.env.RPC_SERVER_URL ?? RPC_PRIMARY;
 
 export const EXPLORER = "https://robinhoodchain.blockscout.com";
@@ -44,7 +54,7 @@ export const robinhoodChain = defineChain({
   id: 4663,
   name: "Robinhood Chain",
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: [RPC_PRIMARY, RPC_FALLBACK] } },
+  rpcUrls: { default: { http: [RPC_PRIMARY, ...(RPC_FALLBACK ? [RPC_FALLBACK] : [])] } },
   blockExplorers: {
     default: { name: "Blockscout", url: EXPLORER },
   },
@@ -90,7 +100,7 @@ export const serverClient = createPublicClient({
       // stay as failover so a missing or exhausted key never takes the app down.
       http(RPC_SERVER, { timeout: 12_000 }),
       http(RPC_PRIMARY, { timeout: 12_000 }),
-      http(RPC_FALLBACK, { timeout: 12_000 }),
+      ...(RPC_FALLBACK ? [http(RPC_FALLBACK, { timeout: 12_000 })] : []),
     ],
     { rank: false },
   ),

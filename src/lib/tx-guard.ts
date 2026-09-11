@@ -91,6 +91,14 @@ export function explainRevert(e: unknown, fallback: string): string {
   if (/Internal JSON-RPC error|-32603|internal error/i.test(msg)) {
     return "Your wallet's node could not process this transaction. Nothing was sent and your note is unspent. Check that your wallet is on Robinhood Chain (4663) and try again.";
   }
+  /*
+   * -32602 is "invalid params", which is what a node returns when it will not
+   * serve archive data without a paid token. viem renders that as a malformed
+   * request and sends the reader hunting for a bug that is not there.
+   */
+  if (/Archive requests require|-32602|Invalid parameters were provided/i.test(msg)) {
+    return "The RPC this app is talking to will not serve historical logs, which is how your notes are found. Nothing was sent. Reload to retry, and if it persists the node needs replacing.";
+  }
   if (/insufficient funds/i.test(msg)) {
     return "Not enough ETH in this wallet to cover gas. Nothing was sent.";
   }

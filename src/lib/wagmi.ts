@@ -26,7 +26,10 @@ export const wagmiConfig = createConfig({
     [robinhoodChain.id]: fallback(
       [
         http(RPC_PRIMARY, { timeout: 12_000, retryCount: 3, retryDelay: 250 }),
-        http(RPC_FALLBACK, { timeout: 12_000, retryCount: 3, retryDelay: 250 }),
+        // Only when one is actually configured. See RPC_FALLBACK in chain.ts:
+        // an endpoint that refuses eth_getLogs cannot serve this app, and
+        // falling through to it broke balances instead of rescuing them.
+        ...(RPC_FALLBACK ? [http(RPC_FALLBACK, { timeout: 12_000, retryCount: 3, retryDelay: 250 })] : []),
       ],
       { rank: false },
     ),
