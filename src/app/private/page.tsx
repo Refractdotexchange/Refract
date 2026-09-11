@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { ShieldedPanel } from "@/components/shielded-panel";
+import { PoolPanel } from "@/components/pool-panel";
+import { HowShieldingWorks } from "@/components/how-shielding-works";
 
 export const metadata: Metadata = {
   title: "Private",
   description:
-    "Shielded swaps on Robinhood Chain. Nobody holds your funds: deposits are spent with a zero-knowledge proof, not an operator signature.",
+    "Shielded ETH on Robinhood Chain. Deposit any amount, spend any part of it, and the rest stays hidden. No operator, no admin key.",
 };
 
 export default function PrivatePage() {
@@ -19,20 +20,23 @@ export default function PrivatePage() {
           className="font-display h-display"
           style={{ fontSize: "clamp(30px,4vw,46px)", fontWeight: 700, margin: "12px 0 0" }}
         >
-          Private <span className="spectrum-text">swaps</span>
+          Private <span className="spectrum-text">balances</span>
         </h1>
         <p
           className="lede"
           style={{ color: "var(--muted)", fontSize: 16, lineHeight: 1.65, maxWidth: 680, marginTop: 14 }}
         >
-          Deposit into a shielded pool and spend later from an address that was
-          never linked to it. There is no operator and no admin key: the only way
-          out is a proof that you know your note&rsquo;s secret, checked by the
+          Deposit any amount, spend any part of it later from an address that was
+          never linked to it, and whatever is left stays hidden. There is no
+          operator and no admin key: the only way out is a proof, checked by the
           contract itself.
         </p>
       </header>
 
-      <ShieldedPanel />
+      <div className="two-col" style={{ alignItems: "start", gap: 14 }}>
+        <PoolPanel />
+        <HowShieldingWorks />
+      </div>
     </div>
   );
 }
