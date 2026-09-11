@@ -17,12 +17,16 @@ cd "$(dirname "$0")"
 export PATH="$HOME/.foundry/bin:$PATH"
 
 RPC="https://rpc.mainnet.chain.robinhood.com"
+# Fixed at deploy and never changeable. The pool may call exactly this address
+# when swapping, because an arbitrary call target turns a payload into a drain.
+ROUTER="0x8876789976dEcBfCbBbe364623C63652db8C0904"
 
 echo
 echo "  Deploying the hidden-amount pool"
 echo "  ─────────────────────────────────────────────"
 echo "  chain         Robinhood Chain (4663)"
 echo "  amounts       any, hidden inside the note"
+echo "  router        $ROUTER"
 echo "  ─────────────────────────────────────────────"
 echo
 
@@ -64,7 +68,7 @@ echo "       $ADAPTER"
 
 echo "  4/4  pool"
 POOL=$(forge create src/RefractPool.sol:RefractPool \
-  "${KEYARG[@]}" --rpc-url "$RPC" --broadcast --json --constructor-args "$ADAPTER" "$HASHER" | json deployedTo)
+  "${KEYARG[@]}" --rpc-url "$RPC" --broadcast --json --constructor-args "$ADAPTER" "$HASHER" "$ROUTER" | json deployedTo)
 echo "       $POOL"
 
 BLOCK=$(cast block-number --rpc-url "$RPC")
@@ -75,6 +79,7 @@ echo "  pool          $POOL"
 echo "  deployBlock   $BLOCK"
 echo "  root          $(cast call "$POOL" 'getLastRoot()(bytes32)' --rpc-url "$RPC")"
 echo "  leaves        $(cast call "$POOL" 'nextIndex()(uint32)' --rpc-url "$RPC")"
+echo "  router        $(cast call "$POOL" 'router()(address)' --rpc-url "$RPC")"
 echo "  ─────────────────────────────────────────────"
 echo
 echo "  Put these in src/lib/pool-config.ts:"

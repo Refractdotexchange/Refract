@@ -85,6 +85,19 @@ contract RefractPool {
 
     mapping(bytes32 => bool) public nullifierSpent;
 
+    /**
+     * Reentrancy latch.
+     *
+     * `swap` hands control to two contracts an attacker chooses the shape of:
+     * the router payload, and `tokenOut`, whose `balanceOf` and `transfer` are
+     * arbitrary code called by this pool. Spending nullifiers before the call
+     * already stops the same note being spent twice, but the output accounting
+     * reads a balance either side of a foreign call, and reasoning case by case
+     * about what can be made to happen in between is how this kind of contract
+     * gets emptied. One latch removes the whole class.
+     */
+    uint256 private _entered = 1;
+
     /* ---------------------------------------------------------------- events */
 
     /**
@@ -113,6 +126,14 @@ contract RefractPool {
     error SwapFailed();
     error InsufficientOutput();
     error NotASpend();
+    error Reentrancy();
+
+    modifier nonReentrant() {
+        if (_entered != 1) revert Reentrancy();
+        _entered = 2;
+        _;
+        _entered = 1;
+    }
 
     /* ------------------------------------------------------------- structures */
 
@@ -187,6 +208,7 @@ contract RefractPool {
     function transact(Proof calldata proof, TransactArgs calldata args, ExtData calldata extData)
         external
         payable
+        nonReentrant
     {
         if (!isKnownRoot(args.root)) revert UnknownRoot();
 
@@ -269,7 +291,7 @@ contract RefractPool {
         TransactArgs calldata args,
         ExtData calldata extData,
         SwapData calldata swapData
-    ) external {
+    ) external nonReentrant {
         if (!isKnownRoot(args.root)) revert UnknownRoot();
         if (args.inNullifiers[0] == args.inNullifiers[1]) revert DuplicateNullifier();
         for (uint256 i = 0; i < args.inNullifiers.length; i++) {
