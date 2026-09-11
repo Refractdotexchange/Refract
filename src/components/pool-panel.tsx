@@ -2,17 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
-import { formatEther, parseEther, isAddress, type Address } from "viem";
+import { formatEther, formatUnits, parseEther, isAddress, zeroAddress, type Address } from "viem";
 import { refractPoolAbi } from "@/lib/pool-abi-v2";
 import { REFRACT_POOL, isPoolLive } from "@/lib/pool-config";
 import { scanPool, selectNotes, type PoolScan } from "@/lib/pool-notes";
 import { buildShieldedTx } from "@/lib/prove-joinsplit";
+import { buildShieldedSwapCall } from "@/lib/shielded-swap";
+import { applySlippage } from "@/lib/swap";
+import type { Route } from "@/lib/quote";
 import { useShieldedAccount } from "@/lib/use-shielded-account";
 import { REQUIRED_CHAIN_ID, explainRevert, isUserRejection } from "@/lib/tx-guard";
 import { txUrl } from "@/lib/chain";
 import { useToast } from "./toast";
 
-type Tab = "deposit" | "withdraw";
+type Tab = "deposit" | "withdraw" | "swap";
 
 /** Proving runs the pairing precompiles, which wallets estimate badly. */
 const TRANSACT_GAS = 2_000_000n;
@@ -32,6 +35,10 @@ export function PoolPanel() {
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [tokenOut, setTokenOut] = useState("");
+  const [route, setRoute] = useState<Route | null>(null);
+  const [tokenMeta, setTokenMeta] = useState<{ symbol: string; decimals: number } | null>(null);
+  const [quoting, setQuoting] = useState(false);
 
   const live = isPoolLive();
 
@@ -60,6 +67,53 @@ export function PoolPanel() {
     if (key) void refresh();
   }, [key, refresh]);
 
+  /*
+   * Quotes come from the same engine the public swap page uses, so a shielded
+   * trade is priced identically to an open one. Only the execution differs.
+   */
+  useEffect(() => {
+    if (tab !== "swap" || !isAddress(tokenOut.trim())) {
+      setRoute(null);
+      return;
+    }
+    let amt: bigint;
+    try {
+      amt = parseEther(amount.trim() || "0");
+    } catch {
+      return;
+    }
+    if (amt <= 0n) {
+      setRoute(null);
+      return;
+    }
+    let cancelled = false;
+    setQuoting(true);
+    const t = setTimeout(async () => {
+      try {
+        const [q, meta] = await Promise.all([
+          fetch(`/api/quote?in=${zeroAddress}&out=${tokenOut.trim()}&amount=${amt}`).then((r) => r.json()),
+          fetch(`/api/token/${tokenOut.trim()}`).then((r) => (r.ok ? r.json() : null)),
+        ]);
+        if (cancelled) return;
+        const routes: Route[] = q?.routes ?? [];
+        const best = routes
+          .filter((r) => r.amountOut && BigInt(r.amountOut) > 0n)
+          .sort((a, b) => (BigInt(b.amountOut) > BigInt(a.amountOut) ? 1 : -1))[0];
+        setRoute(best ?? null);
+        setTokenMeta(meta ? { symbol: meta.symbol ?? "TOKEN", decimals: meta.decimals ?? 18 } : null);
+      } catch {
+        if (!cancelled) setRoute(null);
+      } finally {
+        if (!cancelled) setQuoting(false);
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+      setQuoting(false);
+    };
+  }, [tab, tokenOut, amount]);
+
   let parsed: bigint | null = null;
   try {
     parsed = amount.trim() ? parseEther(amount.trim()) : null;
@@ -70,8 +124,10 @@ export function PoolPanel() {
   const balance = scan?.balance ?? 0n;
   const enough = tab === "deposit" || (parsed !== null && parsed <= balance);
   const recipientOk = tab === "deposit" || isAddress(recipient.trim());
+  const swapReady = tab !== "swap" || (route !== null && isAddress(tokenOut.trim()));
   const canSubmit =
-    live && key && parsed !== null && parsed > 0n && enough && recipientOk && !stage && !scanning;
+    live && key && parsed !== null && parsed > 0n && enough && recipientOk && swapReady &&
+    !stage && !scanning && !quoting;
 
   async function submit() {
     if (!key || !publicClient || !address || parsed === null || !REFRACT_POOL.address) return;
@@ -96,6 +152,7 @@ export function PoolPanel() {
       setScan(fresh);
 
       const depositing = tab === "deposit";
+      const swapping = tab === "swap";
       let inputs: PoolScan["notes"] = [];
       if (!depositing) {
         const picked = selectNotes(fresh.notes, parsed);
@@ -113,9 +170,72 @@ export function PoolPanel() {
         inputs,
         depositAmount: depositing ? parsed : 0n,
         withdrawAmount: depositing ? 0n : parsed,
+        // A swap spends exactly like a withdrawal; only the destination differs.
         recipient: depositing ? "0x0000000000000000000000000000000000000000" : (recipient.trim() as Address),
         onProgress: setStage,
       });
+
+      /*
+       * A swap spends the same way a withdrawal does: the proof says these
+       * notes are mine and this much leaves the pool. Where it goes is the
+       * only difference, and that is bound by the extData hash rather than by
+       * the circuit.
+       */
+      if (swapping) {
+        if (!route) throw new Error("No route for that token right now.");
+        const call = buildShieldedSwapCall({
+          route,
+          tokenOut: { address: tokenOut.trim() as Address, native: false } as never,
+          amountIn: parsed,
+          minOut: applySlippage(BigInt(route.amountOut), 100),
+        });
+        setStage("Checking the transaction");
+        const swapArgs = [
+          tx.proof,
+          tx.args,
+          tx.extData,
+          {
+            tokenOut: call.tokenOut,
+            amountOutMin: applySlippage(BigInt(route.amountOut), 100),
+            recipient: recipient.trim() as Address,
+            routerCalldata: call.calldata,
+          },
+        ] as const;
+
+        await publicClient.simulateContract({
+          address: REFRACT_POOL.address,
+          abi: refractPoolAbi,
+          functionName: "swap",
+          args: swapArgs,
+          account: address,
+        });
+
+        setStage("Waiting for your wallet");
+        const swapHash = await writeContractAsync({
+          chainId: REQUIRED_CHAIN_ID,
+          address: REFRACT_POOL.address,
+          abi: refractPoolAbi,
+          functionName: "swap",
+          args: swapArgs,
+          gas: TRANSACT_GAS,
+        });
+        push({ tone: "info", title: "Swap submitted", href: { label: "View transaction", url: txUrl(swapHash) } });
+
+        const r = await publicClient.waitForTransactionReceipt({ hash: swapHash });
+        if (r.status === "success") {
+          push({
+            tone: "success",
+            title: "Swapped",
+            body: `The pool traded ${formatEther(parsed)} ETH. The chain shows the pool swapped, not you.`,
+            href: { label: "View transaction", url: txUrl(swapHash) },
+          });
+          setAmount("");
+          await refresh();
+        } else {
+          push({ tone: "error", title: "Swap reverted", body: "Nothing moved." });
+        }
+        return;
+      }
 
       const args = [tx.proof, tx.args, tx.extData] as const;
 
@@ -249,7 +369,7 @@ export function PoolPanel() {
       </div>
 
       <div className="panel" style={{ padding: 6, display: "flex", gap: 6, marginBottom: 16 }}>
-        {(["deposit", "withdraw"] as Tab[]).map((t) => (
+        {(["deposit", "withdraw", "swap"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => { setTab(t); setError(null); }}
@@ -282,7 +402,7 @@ export function PoolPanel() {
           background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--text)",
         }}
       />
-      {tab === "withdraw" && (
+      {tab !== "deposit" && (
         <button
           className="btn"
           style={{ fontSize: 11.5, padding: "5px 11px", marginTop: 8 }}
@@ -292,10 +412,55 @@ export function PoolPanel() {
         </button>
       )}
 
-      {tab === "withdraw" && (
+      {tab === "swap" && (
         <>
           <label className="kicker" style={{ display: "block", margin: "16px 0 7px" }}>
-            Send to
+            Token to buy
+          </label>
+          <input
+            className="mono"
+            placeholder="0x... token address"
+            value={tokenOut}
+            onChange={(e) => setTokenOut(e.target.value)}
+            style={{
+              width: "100%", padding: "13px 15px", borderRadius: 12, fontSize: 13.5,
+              background: "var(--surface-2)", border: "1px solid var(--line)", color: "var(--text)",
+            }}
+          />
+          {quoting && (
+            <p className="mono" style={{ fontSize: 11, color: "var(--faint)", marginTop: 8 }}>
+              Pricing across every venue on 4663
+            </p>
+          )}
+          {!quoting && route && (
+            <div
+              className="panel"
+              style={{ padding: "12px 14px", marginTop: 10, background: "color-mix(in srgb, var(--gold) 7%, transparent)" }}
+            >
+              <div className="mono" style={{ fontSize: 10.5, color: "var(--faint)", marginBottom: 5 }}>
+                {route.label} · best of every venue quoted
+              </div>
+              <div className="mono" style={{ fontSize: 17, color: "var(--text)" }}>
+                ≈ {tokenMeta ? formatUnits(BigInt(route.amountOut), tokenMeta.decimals) : route.amountOut}{" "}
+                <span style={{ color: "var(--muted)", fontSize: 13 }}>{tokenMeta?.symbol ?? ""}</span>
+              </div>
+              <div className="mono" style={{ fontSize: 10.5, color: "var(--faint)", marginTop: 5 }}>
+                1% slippage. Anything above the minimum still reaches you.
+              </div>
+            </div>
+          )}
+          {!quoting && !route && isAddress(tokenOut.trim()) && (
+            <p style={{ color: "var(--ember)", fontSize: 12.5, marginTop: 8 }}>
+              No route to that token right now.
+            </p>
+          )}
+        </>
+      )}
+
+      {tab !== "deposit" && (
+        <>
+          <label className="kicker" style={{ display: "block", margin: "16px 0 7px" }}>
+            {tab === "swap" ? "Send the token to" : "Send to"}
           </label>
           <input
             className="mono"
@@ -308,8 +473,8 @@ export function PoolPanel() {
             }}
           />
           <p className="mono" style={{ fontSize: 10.5, color: "var(--faint)", marginTop: 8, lineHeight: 1.55 }}>
-            Use an address with no history. Withdrawing to the wallet you
-            deposited from links the two and undoes the privacy.
+            Use an address with no history. Sending to the wallet you deposited
+            from links the two and undoes the privacy.
           </p>
         </>
       )}
@@ -331,7 +496,9 @@ export function PoolPanel() {
           ? stage
           : tab === "deposit"
             ? "Shield this amount"
-            : "Prove and withdraw"}
+            : tab === "swap"
+              ? "Prove and swap"
+              : "Prove and withdraw"}
       </button>
 
       {error && (
@@ -341,6 +508,7 @@ export function PoolPanel() {
       <p className="mono" style={{ fontSize: 10.5, color: "var(--faint)", marginTop: 14, lineHeight: 1.6 }}>
         Proving runs entirely in your browser and takes a few seconds. Any
         amount you do not spend comes back as a new hidden note.
+        {tab === "swap" && " The pool makes the trade, so the chain records that the pool swapped and not that you did."}
       </p>
     </div>
   );

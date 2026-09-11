@@ -240,7 +240,7 @@ type V4PoolKey = {
 };
 
 /** Encode the action list and its parameters for a single-hop exact-in swap. */
-function encodeV4Actions({
+export function encodeV4Actions({
   poolKey,
   zeroForOne,
   amountIn,
