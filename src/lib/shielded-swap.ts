@@ -38,7 +38,7 @@ function v3Path(tokenIn: Address, fee: number, tokenOut: Address): Hex {
     tokenOut.slice(2).toLowerCase()) as Hex;
 }
 
-export type ShieldedSwapCall = {
+export type RoutedSwapCall = {
   /** Calldata the pool hands to the router, verbatim. */
   calldata: Hex;
   /** Token the pool will receive and forward. */
@@ -46,7 +46,11 @@ export type ShieldedSwapCall = {
 };
 
 /**
- * Build the router call for spending `amountIn` of shielded ETH.
+ * Build the router call for a contract that swaps on someone's behalf.
+ *
+ * Used by both the shielded pool and the fee router. Neither can let the
+ * router pay the trader directly: each needs the output to arrive at itself so
+ * it can measure what actually turned up before passing it on.
  *
  * Input is always native ETH: notes in this pool are ETH-denominated, so there
  * is no other asset for a swap to start from. For V2 and V3 the ETH is wrapped
@@ -54,7 +58,7 @@ export type ShieldedSwapCall = {
  * than the caller, because the pool never grants Permit2 an allowance. V4
  * settles native input itself and needs no wrap.
  */
-export function buildShieldedSwapCall({
+export function buildRoutedSwapCall({
   route,
   tokenOut,
   amountIn,
@@ -66,7 +70,7 @@ export function buildShieldedSwapCall({
   amountIn: bigint;
   minOut: bigint;
   deadlineSeconds?: number;
-}): ShieldedSwapCall {
+}): RoutedSwapCall {
   if (tokenOut.native) {
     throw new Error("A shielded swap must buy a token. Withdraw to move ETH.");
   }

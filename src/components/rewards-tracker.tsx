@@ -176,9 +176,11 @@ export function RewardsTracker() {
                   className="panel-flat"
                   style={{ marginTop: 16, padding: "11px 15px", fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6, textAlign: "left" }}
                 >
-                  Balances accrue continuously and settle when the distributor contract goes live.
-                  Nothing is claimable yet. This figure is an audit of what your volume has earned,
-                  computed from the last {compact(data.scannedBlocks, 0)} blocks.
+                  This figure is an audit of what your whole trading history would have
+                  earned, computed from the last {compact(data.scannedBlocks, 0)} blocks. It is
+                  not the claimable balance. Cashback is only earned on trades routed
+                  through the fee router, which went live recently, and whatever those
+                  have earned is shown at the top of this page and can be claimed there.
                 </div>
               </div>
 

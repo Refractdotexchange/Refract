@@ -12,6 +12,9 @@ import { useTokenBalance } from "@/hooks/use-token-balance";
 import { formatUnits, parseUnits } from "@/lib/format";
 import { NATIVE_TOKEN, USDG_TOKEN, sameToken, type TokenInfo } from "@/lib/tokens";
 import { applySlippage, buildSwap, buildV4Swap, gasReserve, PERMIT2, permit2Abi } from "@/lib/swap";
+import { buildRoutedSwapCall } from "@/lib/shielded-swap";
+import { FEE_ROUTER, isFeeRouterLive } from "@/lib/fee-config";
+import { feeRouterAbi } from "@/lib/fee-abi";
 import { erc20Abi } from "@/lib/abi";
 import { CONTRACTS, txUrl } from "@/lib/chain";
 import { CASHBACK_BPS } from "@/lib/rewards";
@@ -113,6 +116,55 @@ export function SwapCard({ buy }: { buy?: TokenInfo | null } = {}) {
     if (!active || !address || !publicClient) return;
 
     try {
+      /*
+       * Buying with ETH goes through the fee router, which is what makes
+       * cashback exist at all: it records the volume and keeps a share of what
+       * routing beat the plain V2 pair by, never a share of the trade.
+       *
+       * Only this direction. Selling a token would have to reach the Universal
+       * Router through Permit2, which means an allowance the fee router would
+       * have to hold on the trader's behalf, so those trades still go direct
+       * and are not charged.
+       */
+      if (isFeeRouterLive() && FEE_ROUTER.address && tokenIn.native && !tokenOut.native) {
+        const call = buildRoutedSwapCall({
+          route: active,
+          tokenOut,
+          amountIn,
+          minOut,
+        });
+
+        setBusy("swapping");
+        const feeHash = await writeContractAsync({
+          address: FEE_ROUTER.address,
+          abi: feeRouterAbi,
+          functionName: "swapExactEthForToken",
+          args: [call.tokenOut, minOut, address, call.calldata],
+          value: amountIn,
+        });
+        push({
+          tone: "info",
+          title: "Swap submitted",
+          body: `${tokenIn.symbol} → ${tokenOut.symbol} via ${active.label}.`,
+          href: { label: "View transaction", url: txUrl(feeHash) },
+        });
+
+        const feeReceipt = await publicClient.waitForTransactionReceipt({ hash: feeHash });
+        if (feeReceipt.status === "success") {
+          push({
+            tone: "success",
+            title: "Swapped",
+            body: "Cashback on this trade is claimable from the Rewards page.",
+            href: { label: "View transaction", url: txUrl(feeHash) },
+          });
+          setAmount("");
+        } else {
+          push({ tone: "error", title: "Swap reverted", body: "Nothing moved." });
+        }
+        setBusy(null);
+        return;
+      }
+
       // V4 goes through the Universal Router rather than SwapRouter02, and
       // carries its own pool key from the quote.
       const plan =

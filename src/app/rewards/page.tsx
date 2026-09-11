@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CashbackClaim } from "@/components/cashback-claim";
 import { RewardsTracker } from "@/components/rewards-tracker";
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RewardsPage() {
         </p>
       </div>
 
+      <CashbackClaim />
       <RewardsTracker />
     </div>
   );

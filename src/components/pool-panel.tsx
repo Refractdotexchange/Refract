@@ -7,7 +7,7 @@ import { refractPoolAbi } from "@/lib/pool-abi-v2";
 import { REFRACT_POOL, isPoolLive } from "@/lib/pool-config";
 import { scanPool, selectNotes, type PoolScan } from "@/lib/pool-notes";
 import { buildShieldedTx, type SwapData as SwapDataT } from "@/lib/prove-joinsplit";
-import { buildShieldedSwapCall } from "@/lib/shielded-swap";
+import { buildRoutedSwapCall } from "@/lib/shielded-swap";
 import { applySlippage } from "@/lib/swap";
 import type { Route } from "@/lib/quote";
 import { useShieldedAccount } from "@/lib/use-shielded-account";
@@ -174,7 +174,7 @@ export function PoolPanel() {
       if (swapping) {
         if (!route) throw new Error("No route for that token right now.");
         const minOut = applySlippage(BigInt(route.amountOut), 100);
-        const call = buildShieldedSwapCall({
+        const call = buildRoutedSwapCall({
           route,
           tokenOut: { address: tokenOut.trim() as Address, native: false } as never,
           amountIn: parsed,
