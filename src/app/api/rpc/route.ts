@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { RPC_SERVER } from "@/lib/chain";
+import { RPC_SERVER, RPC_PUBLIC } from "@/lib/chain";
 
 /**
  * JSON-RPC proxy, so the browser can use the paid endpoint without holding
@@ -77,24 +77,41 @@ export async function POST(req: Request) {
     );
   }
 
-  try {
-    const upstream = await fetch(RPC_SERVER, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-      // Long enough for a wide getLogs, short enough to fail rather than hang.
-      signal: AbortSignal.timeout(20_000),
-    });
+  /*
+   * Authenticated endpoint first, public node behind it.
+   *
+   * The plan is free, so the risk of an exposed or exhausted key was never a
+   * bill: it is that the quota runs out and this app stops resolving balances,
+   * which is worse. The public node is slower and rate-limits under load, and
+   * it does answer eth_getLogs, which is the call a shielded balance cannot do
+   * without.
+   */
+  for (const endpoint of [RPC_SERVER, RPC_PUBLIC]) {
+    try {
+      const upstream = await fetch(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+        // Long enough for a wide getLogs, short enough to fail over rather than hang.
+        signal: AbortSignal.timeout(20_000),
+      });
 
-    const text = await upstream.text();
-    return new NextResponse(text, {
-      status: upstream.status,
-      headers: { "content-type": "application/json", "cache-control": "no-store" },
-    });
-  } catch {
-    return NextResponse.json(
-      { jsonrpc: "2.0", id: null, error: { code: -32603, message: "Upstream RPC unavailable." } },
-      { status: 502 },
-    );
+      // A 4xx or 5xx from the primary is a reason to try the next one; a
+      // JSON-RPC error inside a 200 is a real answer and is passed through.
+      if (!upstream.ok && endpoint !== RPC_PUBLIC) continue;
+
+      const text = await upstream.text();
+      return new NextResponse(text, {
+        status: upstream.status,
+        headers: { "content-type": "application/json", "cache-control": "no-store" },
+      });
+    } catch {
+      // Timed out or unreachable. Fall through to the next endpoint.
+    }
   }
+
+  return NextResponse.json(
+    { jsonrpc: "2.0", id: null, error: { code: -32603, message: "No RPC endpoint answered." } },
+    { status: 502 },
+  );
 }
