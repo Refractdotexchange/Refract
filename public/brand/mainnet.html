@@ -1,0 +1,100 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;overflow:hidden;background:#000}
+  .stage{position:relative;width:1600px;height:900px;padding:64px 78px;background:
+    radial-gradient(ellipse 64% 94% at 50% 40%, rgba(163,230,53,.18), transparent 62%),
+    radial-gradient(ellipse 42% 72% at 10% 26%, rgba(121,181,32,.09), transparent 64%),
+    #000;}
+  .grid{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(163,230,53,.06) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(163,230,53,.06) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(ellipse 84% 96% at 50% 50%,#000 24%,transparent 82%);}
+  .inner{position:relative;z-index:2;height:100%;display:flex;flex-direction:column}
+
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+  .kick{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.3em;
+        text-transform:uppercase;color:#67715f;display:flex;align-items:center;gap:14px}
+  .kick .bar{width:44px;height:2px;background:#a3e635;display:inline-block}
+  .pill{display:flex;align-items:center;gap:11px;font-family:'IBM Plex Mono',monospace;
+        font-size:15px;letter-spacing:.26em;text-transform:uppercase;color:#0b1400;
+        background:#a3e635;border-radius:999px;padding:11px 24px;font-weight:600;
+        box-shadow:0 0 44px -8px rgba(163,230,53,.8)}
+  .pill .dot{width:9px;height:9px;border-radius:50%;background:#0b1400}
+
+  .head{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
+        font-size:104px;line-height:.95;letter-spacing:-.05em;color:#f2f5ee;margin-bottom:14px}
+  .head b{background:linear-gradient(96deg,#f8fff0,#e6ffb3 22%,#c9f56e 52%,#a3e635);
+          -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{font-family:'Space Grotesk',sans-serif;font-size:27px;color:#9ba695;
+       margin-bottom:38px;max-width:900px;line-height:1.45}
+
+  .cards{display:flex;gap:16px;flex:1}
+  .card{flex:1;border-radius:20px;padding:24px 26px;display:flex;flex-direction:column;
+        background:rgba(163,230,53,.075);border:1.5px solid rgba(163,230,53,.42);
+        box-shadow:0 0 60px -24px rgba(163,230,53,.5)}
+  .ct{display:flex;align-items:center;gap:9px;font-family:'IBM Plex Mono',monospace;
+      font-size:12.5px;letter-spacing:.2em;text-transform:uppercase;color:#a3e635;margin-bottom:11px}
+  .ct .d{width:8px;height:8px;border-radius:2px;background:#a3e635;box-shadow:0 0 10px #a3e635}
+  .cn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:29px;
+      letter-spacing:-.02em;color:#f2f5ee;margin-bottom:9px;line-height:1.1}
+  .cb{font-family:'Space Grotesk',sans-serif;font-size:18.5px;color:#c9d4bd;line-height:1.45;margin-top:auto}
+
+  .foot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:30px}
+  .url{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:34px;color:#f2f5ee}
+  .meta{margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:14.5px;
+        letter-spacing:.19em;text-transform:uppercase;color:#67715f}
+  .right{font-family:'IBM Plex Mono',monospace;font-size:14.5px;letter-spacing:.19em;
+         text-transform:uppercase;color:#67715f;text-align:right;line-height:1.8}
+</style>
+<div class="stage">
+  <div class="grid"></div>
+  <div class="inner">
+    <div class="top">
+      <div class="kick"><span class="bar"></span> Robinhood Chain &middot; 4663</div>
+      <div class="pill"><span class="dot"></span> Mainnet live</div>
+    </div>
+
+    <div class="head">Mainnet is <b>live</b>.</div>
+    <div class="sub">
+      Routing, cashback, private send and private swap. All of it on chain, none of it
+      holding your funds.
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="ct"><span class="d"></span> Live</div>
+        <div class="cn">Best route</div>
+        <div class="cb">Every venue on 4663 quoted on every trade, and the best one wins.</div>
+      </div>
+      <div class="card">
+        <div class="ct"><span class="d"></span> Live</div>
+        <div class="cn">Cashback</div>
+        <div class="cb">A share of what routing found, owed back to the volume that earned it. Claim it yourself, from the contract.</div>
+      </div>
+      <div class="card">
+        <div class="ct"><span class="d"></span> Live</div>
+        <div class="cn">PrivateSend</div>
+        <div class="cb">Any amount in, any part out, and the change never reaches the chain.</div>
+      </div>
+      <div class="card">
+        <div class="ct"><span class="d"></span> Live</div>
+        <div class="cn">PrivateSwap</div>
+        <div class="cb">The pool makes the trade, so the chain records the pool and not you.</div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div>
+        <div class="url">refract.exchange</div>
+        <div class="meta">Non&#8209;custodial &middot; no operator &middot; no admin key</div>
+      </div>
+      <div class="right">Nobody holds your funds<br>Nobody sees whose they are</div>
+    </div>
+  </div>
+</div>
