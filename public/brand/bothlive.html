@@ -21,34 +21,45 @@
   .kick{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.28em;
         text-transform:uppercase;color:#67715f;display:flex;align-items:center;gap:14px}
   .kick .bar{width:44px;height:2px;background:#a3e635;display:inline-block}
-  .livepill{display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;
+  .livepill{display:flex;align-items:center;gap:11px;font-family:'IBM Plex Mono',monospace;
             font-size:15px;letter-spacing:.26em;text-transform:uppercase;color:#0b1400;
-            background:#a3e635;border-radius:999px;padding:11px 22px;font-weight:600;
+            background:#a3e635;border-radius:999px;padding:11px 24px;font-weight:600;
             box-shadow:0 0 40px -8px rgba(163,230,53,.75)}
   .livepill .dot{width:9px;height:9px;border-radius:50%;background:#0b1400}
+  .beta{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;
+        letter-spacing:-.01em;color:#0b1400;background:#c9f56e;border-radius:12px;
+        padding:6px 16px;margin-left:22px;vertical-align:12px;display:inline-block;
+        box-shadow:0 0 44px -10px rgba(201,245,110,.8)}
+  .note{display:flex;align-items:center;gap:13px;margin-top:26px;padding:15px 20px;
+        border-radius:15px;background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.09)}
+  .note .b{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.2em;
+           text-transform:uppercase;color:#0b1400;background:#c9f56e;border-radius:6px;
+           padding:5px 11px;font-weight:600;flex:0 0 auto}
+  .note .t{font-family:'Space Grotesk',sans-serif;font-size:21px;color:#9ba695;line-height:1.35}
 
   .head{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
-        font-size:92px;line-height:.97;letter-spacing:-.05em;color:#f2f5ee;margin-bottom:10px}
+        font-size:84px;line-height:.98;letter-spacing:-.05em;color:#f2f5ee;margin-bottom:10px}
   .head b{background:linear-gradient(96deg,#f8fff0,#e6ffb3 24%,#c9f56e 54%,#a3e635);
           -webkit-background-clip:text;background-clip:text;color:transparent}
-  .sub{font-family:'Space Grotesk',sans-serif;font-size:27px;color:#9ba695;margin-bottom:40px}
+  .sub{font-family:'Space Grotesk',sans-serif;font-size:26px;color:#9ba695;margin-bottom:32px}
 
   .cards{display:flex;gap:24px;flex:1}
-  .card{flex:1;border-radius:24px;padding:34px 36px;position:relative;
+  .card{flex:1;border-radius:24px;padding:30px 34px;position:relative;
         background:rgba(163,230,53,.085);border:1.5px solid rgba(163,230,53,.5);
         box-shadow:0 0 70px -22px rgba(163,230,53,.55);display:flex;flex-direction:column}
   .ctop{display:flex;align-items:center;gap:12px;margin-bottom:8px}
   .ctop .dot{width:10px;height:10px;border-radius:3px;background:#a3e635;box-shadow:0 0 12px #a3e635}
   .ctop .n{font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.22em;
            text-transform:uppercase;color:#a3e635}
-  .cname{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:46px;
-         letter-spacing:-.03em;color:#f2f5ee;margin-bottom:18px}
+  .cname{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:42px;
+         letter-spacing:-.03em;color:#f2f5ee;margin-bottom:14px}
   .lines{display:flex;flex-direction:column;gap:13px;margin-top:auto}
   .line{display:flex;gap:13px;align-items:flex-start;font-family:'Space Grotesk',sans-serif;
         font-size:23px;color:#c9d4bd;line-height:1.35}
   .line .tick{color:#a3e635;font-size:20px;line-height:1.4;flex:0 0 auto}
 
-  .foot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:36px}
+  .foot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:26px}
   .url{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:34px;
        letter-spacing:-.02em;color:#f2f5ee}
   .meta{margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:14.5px;
@@ -61,10 +72,10 @@
   <div class="inner">
     <div class="top">
       <div class="kick"><span class="bar"></span> Shielded pool &middot; chain 4663</div>
-      <div class="livepill"><span class="dot"></span> Both live</div>
+      <div class="livepill"><span class="dot"></span> Live now</div>
     </div>
 
-    <div class="head">Private send.<br><b>Private swap.</b></div>
+    <div class="head">Private send.<br><b>Private swap.</b><span class="beta">BETA</span></div>
     <div class="sub">Any amount in. Any part out. The rest never reaches the chain.</div>
 
     <div class="cards">
@@ -87,6 +98,11 @@
           <div class="line"><span class="tick">&#10003;</span> Token lands where you choose</div>
         </div>
       </div>
+    </div>
+
+    <div class="note">
+      <span class="b">Beta</span>
+      <span class="t">Early and unaudited. Start small while the trusted setup ceremony is finished.</span>
     </div>
 
     <div class="foot">
