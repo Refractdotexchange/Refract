@@ -55,3 +55,4 @@ public/zk/joinsplit.zkey
 # video/music/CREDITS.md and the file stays out of the repo.
 video/public/music/*-track.wav
 Music.mp3
+privateswap.mp3

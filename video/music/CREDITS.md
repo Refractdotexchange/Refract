@@ -3,29 +3,37 @@
 Most cues in `public/music` are original, synthesised by `music/compose.mjs`.
 Nothing in those is sampled or licensed, so they carry no obligations.
 
-Where a supplied track is used instead, it is listed here. These files are
+Where a supplied track is used instead, it is listed below. Those files are
 **gitignored on purpose**: the licences cover using a track in a video, not
 redistributing the audio itself, so the repo carries the credit and not the
 file.
 
-## ShieldedFlow and PrivateSwap
+"No Copyright" is the name these channels trade under, not the licence. The
+artists retain copyright and grant use subject to their own terms, which
+require a credit wherever the video is published. **The credit line for a film
+goes in the description of any post carrying it.** Check the artist's terms
+before using one in anything paid or sponsored.
 
-`refract-shielded-flow-track.wav`, `refract-private-swap-track.wav`
+---
 
-> "Cinematic Action Teaser NoCopyright Background Music / Rush"
-> by **ArcticFoxMusic — No Copyright Music** (2024)
+## ShieldedFlow — `refract-shielded-flow-track.wav`
+
+> Music: "Rush" by ArcticFoxMusic — No Copyright Music
 
 Source: https://www.youtube.com/watch?v=-9D3b3G-2YQ
+Trimmed to 27.13s, 1.4s fade under the end card, normalised to -15 LUFS.
 
-"No Copyright" is the channel's name, not the licence. The artist retains
-copyright and grants use subject to their terms, which require a credit
-wherever the video is published. **Put the line above in the description of
-any post carrying this film**, and check the artist's own terms before using
-it in anything paid or sponsored.
+## PrivateSwap — `refract-private-swap-track.wav`
 
-Processing applied: trimmed to each film's length (27.13s and 23.87s), faded
-under the end card, and normalised to -15 LUFS to match the generated cues.
+> Music: "Invasion" by Soundridemusic — No Copyright Music
 
-The generated score for this film still exists and is rebuilt with
-`node music/compose.mjs shielded-flow`. Switching back is one filename in
-`src/films/ShieldedFlow.tsx`.
+Trimmed to 23.87s, 1.5s fade under the end card, normalised to -15 LUFS.
+Run from its start rather than offset: its opening hit lands on the token
+being chosen, its 13s hit on the pool executing, and its climax on the end
+card.
+
+---
+
+Both films also have an original generated score, still built by
+`node music/compose.mjs shielded-flow` and `node music/compose.mjs
+private-swap`. Switching back to one is a single filename in the film.
