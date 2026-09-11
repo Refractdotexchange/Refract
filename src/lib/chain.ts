@@ -3,8 +3,23 @@ import { defineChain, createPublicClient, http, fallback } from "viem";
 /**
  * Robinhood Chain (EVM L2). Verified live: eth_chainId -> 0x1237 (4663).
  */
-export const RPC_PRIMARY =
-  process.env.NEXT_PUBLIC_RPC_URL ?? "https://rpc.mainnet.chain.robinhood.com";
+/**
+ * What the browser talks to.
+ *
+ * Defaults to this app's own proxy rather than an upstream URL, because the
+ * paid endpoint carries a key and every NEXT_PUBLIC_ value is inlined into the
+ * client bundle at build time. Point NEXT_PUBLIC_RPC_URL at a keyless public
+ * node to bypass the proxy.
+ */
+export const RPC_PRIMARY = process.env.NEXT_PUBLIC_RPC_URL ?? "/api/rpc";
+
+/**
+ * The keyless public node. Named separately because a wallet being asked to
+ * add this network needs somewhere real to point at, and neither a relative
+ * path nor an authenticated URL belongs in that prompt.
+ */
+export const RPC_PUBLIC = "https://rpc.mainnet.chain.robinhood.com";
+
 /**
  * Secondary endpoint, deliberately empty by default.
  *
@@ -26,7 +41,8 @@ export const RPC_PRIMARY =
  */
 export const RPC_FALLBACK = process.env.RPC_FALLBACK_URL ?? "";
 
-export const RPC_SERVER = process.env.RPC_SERVER_URL ?? RPC_PRIMARY;
+/** Server side only, and the only place the authenticated URL is read. */
+export const RPC_SERVER = process.env.RPC_SERVER_URL ?? RPC_PUBLIC;
 
 export const EXPLORER = "https://robinhoodchain.blockscout.com";
 
@@ -54,7 +70,8 @@ export const robinhoodChain = defineChain({
   id: 4663,
   name: "Robinhood Chain",
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: [RPC_PRIMARY, ...(RPC_FALLBACK ? [RPC_FALLBACK] : [])] } },
+  // Metadata for wallet_addEthereumChain, so it must be a real reachable node.
+  rpcUrls: { default: { http: [RPC_PUBLIC] } },
   blockExplorers: {
     default: { name: "Blockscout", url: EXPLORER },
   },
@@ -99,7 +116,7 @@ export const serverClient = createPublicClient({
       // Authenticated endpoint first when one is configured; the public RPCs
       // stay as failover so a missing or exhausted key never takes the app down.
       http(RPC_SERVER, { timeout: 12_000 }),
-      http(RPC_PRIMARY, { timeout: 12_000 }),
+      http(RPC_PUBLIC, { timeout: 12_000 }),
       ...(RPC_FALLBACK ? [http(RPC_FALLBACK, { timeout: 12_000 })] : []),
     ],
     { rank: false },
