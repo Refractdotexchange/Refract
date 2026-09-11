@@ -6,136 +6,113 @@
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{width:1600px;height:900px;overflow:hidden;background:#000}
-  .stage{position:relative;width:1600px;height:900px;padding:48px 84px 42px;background:
-    radial-gradient(ellipse 58% 74% at 50% 40%, rgba(163,230,53,.17), transparent 62%),
-    radial-gradient(ellipse 90% 40% at 50% 104%, rgba(121,181,32,.08), transparent 62%),
+  .stage{position:relative;width:1600px;height:900px;padding:56px 80px 50px;background:
+    radial-gradient(ellipse 58% 92% at 72% 44%, rgba(163,230,53,.16), transparent 62%),
+    radial-gradient(ellipse 42% 74% at 10% 30%, rgba(121,181,32,.08), transparent 64%),
     #000;}
-  .gridbg{position:absolute;inset:0;
-    background-image:linear-gradient(rgba(163,230,53,.055) 1px,transparent 1px),
-                     linear-gradient(90deg,rgba(163,230,53,.055) 1px,transparent 1px);
+  .grid{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(163,230,53,.06) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(163,230,53,.06) 1px,transparent 1px);
     background-size:64px 64px;
-    -webkit-mask-image:radial-gradient(ellipse 84% 88% at 50% 44%,#000 28%,transparent 82%);}
-  .arcs{position:absolute;inset:0;z-index:1}
-  .inner{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center}
+    -webkit-mask-image:radial-gradient(ellipse 82% 96% at 50% 50%,#000 26%,transparent 82%);}
+  .inner{position:relative;z-index:2;height:100%;display:flex;flex-direction:column}
 
-  .head{width:100%;display:flex;align-items:center;gap:20px}
-  .head svg.mk{width:40px;height:40px;flex:0 0 40px}
-  .brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:29px;
-         letter-spacing:-.05em;color:#f2f5ee}
-  .kick{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:14px;
-        letter-spacing:.26em;text-transform:uppercase;color:#67715f}
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .kick{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.3em;
+        text-transform:uppercase;color:#67715f;display:flex;align-items:center;gap:14px}
+  .kick .bar{width:44px;height:2px;background:#a3e635;display:inline-block}
+  .pill{font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.26em;
+        text-transform:uppercase;color:#0b1400;background:#a3e635;border-radius:999px;
+        padding:10px 22px;font-weight:600;box-shadow:0 0 40px -10px rgba(163,230,53,.8)}
 
-  .eyebrow{margin-top:34px;display:inline-flex;align-items:center;gap:11px;
-    font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.26em;
-    text-transform:uppercase;color:#a3e635;
-    border:1px solid rgba(163,230,53,.4);background:rgba(163,230,53,.08);
-    border-radius:999px;padding:9px 19px}
-  .dot{width:8px;height:8px;border-radius:50%;background:#a3e635;box-shadow:0 0 11px #a3e635}
+  .head{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
+        font-size:72px;line-height:.98;letter-spacing:-.05em;color:#f2f5ee;margin-bottom:10px}
+  .head b{background:linear-gradient(96deg,#f8fff0,#e6ffb3 24%,#c9f56e 54%,#a3e635);
+          -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{font-family:'Space Grotesk',sans-serif;font-size:24px;color:#9ba695;margin-bottom:26px;max-width:900px}
 
-  .num{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:168px;
-       line-height:.9;letter-spacing:-.06em;margin-top:14px;
-       background:linear-gradient(98deg,#f8fff0,#e6ffb3 22%,#c9f56e 52%,#a3e635 78%,#79b520);
-       -webkit-background-clip:text;background-clip:text;color:transparent}
-  .sub{font-family:'Space Grotesk',sans-serif;font-size:31px;color:#c3ccba;
-       margin-top:4px;letter-spacing:-.015em}
-  .sub b{color:#f2f5ee;font-weight:600}
+  .body{display:flex;gap:22px;flex:1}
+  .compare{flex:1.25;border-radius:22px;padding:24px 30px;
+           background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.085)}
+  .ctitle{font-family:'IBM Plex Mono',monospace;font-size:13.5px;letter-spacing:.2em;
+          text-transform:uppercase;color:#67715f;margin-bottom:22px}
+  .row{display:flex;align-items:baseline;justify-content:space-between;gap:20px;padding:16px 0}
+  .row + .row{border-top:1px solid rgba(255,255,255,.06)}
+  .lbl{font-family:'Space Grotesk',sans-serif;font-size:22px;color:#9ba695}
+  .val{font-family:'IBM Plex Mono',monospace;font-size:34px;color:#f2f5ee;font-variant-numeric:tabular-nums}
+  .val .u{font-size:20px;color:#5e6656;margin-left:8px}
+  .row.win .lbl{color:#f2f5ee;font-weight:600}
+  .row.win .val{color:#c9f56e;font-weight:600}
 
-  .flow{display:flex;align-items:center;gap:15px;
-        font-family:'IBM Plex Mono',monospace;font-size:16px}
-  .flowwrap{margin-top:30px;position:relative;display:flex;flex-direction:column;align-items:center}
-  .loop{width:880px;height:46px;margin-top:4px}
-  .flow s{text-decoration:none;padding:12px 22px;border-radius:11px;
-          background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);color:#9ba695}
-  .flow s.on{color:#0b1400;background:linear-gradient(96deg,#c9f56e,#a3e635);
-             border-color:#a3e635;font-weight:600}
-  .flow o{color:#79b520;font-size:19px}
+  .split{flex:1;display:flex;flex-direction:column;gap:16px}
+  .card{border-radius:20px;padding:20px 24px;background:rgba(163,230,53,.09);
+        border:1.5px solid rgba(163,230,53,.5);box-shadow:0 0 54px -22px rgba(163,230,53,.55)}
+  .cl{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.2em;
+      text-transform:uppercase;color:#a3e635;margin-bottom:9px}
+  .cv{font-family:'IBM Plex Mono',monospace;font-size:38px;color:#f2f5ee;font-variant-numeric:tabular-nums}
+  .cv .u{font-size:19px;color:#9ba695;margin-left:7px}
+  .cn{font-family:'Space Grotesk',sans-serif;font-size:18px;color:#9ba695;margin-top:9px;line-height:1.4}
 
-  .ledger{margin-top:28px;width:940px;border:1px solid rgba(163,230,53,.22);
-          border-radius:20px;background:rgba(255,255,255,.028);overflow:hidden}
-  .lhead{display:flex;padding:15px 30px;border-bottom:1px solid rgba(255,255,255,.07);
-         font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.22em;
-         text-transform:uppercase;color:#5e6a56}
-  .lhead span:first-child{flex:1}
-  .row{display:flex;align-items:center;padding:14px 30px;
-       border-bottom:1px solid rgba(255,255,255,.045);
-       font-family:'IBM Plex Mono',monospace;font-size:26px;color:#c3ccba}
-  .row:last-child{border-bottom:none}
-  .row span:first-child{flex:1}
-  .row b{color:#a3e635;font-weight:600}
+  .rule{margin-top:18px;padding:15px 22px;border-radius:15px;
+        background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);
+        font-family:'Space Grotesk',sans-serif;font-size:23px;color:#c9d4bd;line-height:1.4}
+  .rule b{color:#f2f5ee}
 
-  .note{margin-top:auto;padding-top:18px;width:100%;display:flex;align-items:flex-end;
-        justify-content:space-between;gap:40px}
-  .fine{font-family:'Space Grotesk',sans-serif;font-size:19px;color:#6f7a68;
-        line-height:1.45;max-width:660px;text-align:left}
-  .right{text-align:right;flex-shrink:0}
-  .url{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;
-       letter-spacing:-.02em;color:#f2f5ee}
-  .meta{margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;
-        letter-spacing:.2em;text-transform:uppercase;color:#5e6a56}
+  .foot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:20px}
+  .url{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:32px;color:#f2f5ee}
+  .meta{margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:14px;
+        letter-spacing:.19em;text-transform:uppercase;color:#67715f}
+  .right{font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.19em;
+         text-transform:uppercase;color:#67715f;text-align:right;line-height:1.8}
 </style>
 <div class="stage">
-  <div class="gridbg"></div>
-
+  <div class="grid"></div>
   <div class="inner">
-    <div class="head">
-      <svg class="mk" viewBox="0 0 32 32" fill="none">
-        <defs>
-          <linearGradient id="hm2" x1="16" y1="5" x2="16" y2="28">
-            <stop offset="0%" stop-color="#e6ffb3"/><stop offset="100%" stop-color="#4b7a12"/>
-          </linearGradient>
-        </defs>
-        <path d="M2 15 H11" stroke="#f2f5ee" stroke-width="2.4" stroke-linecap="round"/>
-        <path d="M16 4.5 L27 27 H5 Z" fill="rgba(163,230,53,.12)" stroke="url(#hm2)"
-              stroke-width="2.4" stroke-linejoin="round"/>
-        <g stroke-width="2.4" stroke-linecap="round">
-          <path d="M19 14 L31 10" stroke="#f8fff0"/>
-          <path d="M20 17 L31 16" stroke="#c9f56e"/>
-          <path d="M21 20 L30 23" stroke="#79b520"/>
-        </g>
-      </svg>
-      <span class="brand">REFRACT</span>
-      <span class="kick">Rewards · Chain 4663</span>
+    <div class="top">
+      <div class="kick"><span class="bar"></span> Cashback &middot; live on 4663</div>
+      <div class="pill">Real trade, real numbers</div>
     </div>
 
-    <div class="eyebrow"><span class="dot"></span>Routed volume pays you back</div>
+    <div class="head">We only take a cut<br>of what we <b>find</b>.</div>
+    <div class="sub">One 0.001 ETH buy, priced against the venue you would have used anyway.</div>
 
-    <div class="num">0.12%</div>
-    <div class="sub">of routed volume, back to <b>the wallet that routed it</b></div>
-
-    <div class="flowwrap">
-      <div class="flow">
-        <s>You swap</s><o>&#8594;</o><s>We route the best venue</s><o>&#8594;</o><s class="on">0.12% accrues to you</s>
+    <div class="body">
+      <div class="compare">
+        <div class="ctitle">The same trade, two ways</div>
+        <div class="row">
+          <span class="lbl">Plain Uniswap V2 pays</span>
+          <span class="val">2.532440<span class="u">USDG</span></span>
+        </div>
+        <div class="row win">
+          <span class="lbl">Through REFRACT you get</span>
+          <span class="val">2.546405<span class="u">USDG</span></span>
+        </div>
       </div>
-      <svg class="loop" viewBox="0 0 880 46" fill="none" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="lp" x1="860" y1="0" x2="30" y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="#a3e635" stop-opacity=".85"/>
-            <stop offset="100%" stop-color="#a3e635" stop-opacity=".2"/>
-          </linearGradient>
-        </defs>
-        <path d="M858 2 C858 30 844 38 812 38 H68 C36 38 22 30 22 6"
-              stroke="url(#lp)" stroke-width="2" fill="none" stroke-linecap="round"/>
-        <path d="M16 12 L22 2 L28 12" stroke="#a3e635" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      </svg>
-    </div>
 
-    <div class="ledger">
-      <div class="lhead"><span>Routed volume</span><span>Accrued</span></div>
-      <div class="row"><span>1 ETH</span><b>0.0012 ETH</b></div>
-      <div class="row"><span>50 ETH</span><b>0.06 ETH</b></div>
-      <div class="row"><span>250 ETH</span><b>0.30 ETH</b></div>
-    </div>
-
-    <div class="note">
-      <div class="fine">
-        Computed from your own on-chain swap history, so anyone can audit it.
-        Accrues today; distribution goes live with the rewards contract.
+      <div class="split">
+        <div class="card">
+          <div class="cl">Surplus we found</div>
+          <div class="cv">0.017673<span class="u">USDG</span></div>
+        </div>
+        <div class="card">
+          <div class="cl">Our fee, a fifth of that</div>
+          <div class="cv">0.003534<span class="u">USDG</span></div>
+          <div class="cn">Half of it owed straight back to you.</div>
+        </div>
       </div>
-      <div class="right">
+    </div>
+
+    <div class="rule">
+      <b>Find nothing, charge nothing.</b> The fee comes out of the surplus and never out of
+      your trade, so you cannot end up behind the venue you would have used without us.
+    </div>
+
+    <div class="foot">
+      <div>
         <div class="url">refract.exchange</div>
-        <div class="meta">Non-custodial · Open source</div>
+        <div class="meta">Claimed by you &middot; from the contract</div>
       </div>
+      <div class="right">No operator &middot; no admin key<br>Nobody can claim your share</div>
     </div>
   </div>
 </div>
