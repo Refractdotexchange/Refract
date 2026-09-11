@@ -43,11 +43,11 @@ export default function RoadmapPage() {
           The honest summary
         </div>
         <p style={{ color: "var(--muted)", fontSize: 15.5, lineHeight: 1.7, margin: 0, maxWidth: 780 }}>
-          Phases 0 and 1 are a good product. Fee capture is the only thing standing
-          between that and a business, and it is gated on a contract audit rather than
-          on how fast we work, because it sits in the path of user funds. Everything
-          after it is straightforward once revenue exists and honestly unfundable
-          until it does.
+          Phases 0 and 1 are a good product, and the shielded pool now sends and
+          swaps privately on top of them. Fee capture is the only thing standing
+          between that and a business: cashback has no funding source until fees
+          exist. Everything after it is straightforward once revenue exists and
+          honestly unfundable until it does.
         </p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 20 }}>
           <Link href="/engine" className="btn">
