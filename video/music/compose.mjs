@@ -939,6 +939,74 @@ CUES["refract-shielded-flow"] = (dur) => {
   return mix;
 };
 
+// MAINNET LIVE — the launch film. Four beats, so four places the music has to
+// turn, and two reveals worth a braam: the wallet that funded the swap staying
+// unknown, and all four features landing together.
+CUES["refract-mainnet-live"] = (dur) => {
+  const mix = new Mix(dur);
+  const t = B["mainnet-live"];
+  const end = s(t.end);
+  const HIT = BEAT * 2;
+
+  const TITLE = s(t.title), ROUTE = s(t.route), BEST = s(t.routeBest);
+  const CASH = s(t.cash), CLAIM = s(t.cashClaim), SEND = s(t.send), CHANGE = s(t.sendChange);
+  const SWAP = s(t.swap), UNKNOWN = s(t.swapUnknown), CARDS = s(t.cards), LINE = s(t.line);
+
+  // Low strings hold the floor throughout, so nothing opens on dead air.
+  const CHORDS = [
+    [33, 40, 45, 52], [29, 36, 41, 48], [36, 43, 48, 55], [28, 35, 40, 47],
+  ];
+  for (let i = 0, x = 0; x < end; i++, x += 4) {
+    const c = CHORDS[i % CHORDS.length];
+    const span = Math.min(4.4, end - x + 0.4);
+    // Held down until the payoff so the four features landing is the peak.
+    const lift = x < ROUTE ? 0.45 : x < SWAP ? 0.62 : x < CARDS ? 0.55 : 1;
+    strings(mix, c, x, span, { gain: 0.25 * lift, shape: lift });
+    sub(mix, c[0] - 12, x, span, 0.4 * lift);
+  }
+
+  reverseHit(mix, Math.max(0, TITLE - 0.7), 0.7, { gain: 0.24 });
+  taiko(mix, TITLE, { gain: 0.52, tone: 58 });
+
+  // Each venue reporting in, then the winner.
+  for (let i = 0; i < 5; i++) tick(mix, ROUTE + i * (16 / FPS), { gain: 0.07, pitch: 2900 });
+  for (let x = ROUTE; x < CASH; x += HIT) taiko(mix, x, { gain: 0.26, tone: 62, pan: -0.12 });
+  impact(mix, BEST, { gain: 0.3, tone: 44 });
+  [74, 78, 81].forEach((m, i) => bell(mix, m, BEST + i * 0.07, { gain: 0.085, pan: -0.35 + i * 0.35, decay: 1.1 }));
+
+  // Cashback: the figure that matters is the one you receive.
+  taiko(mix, CASH, { gain: 0.32, tone: 60 });
+  for (let x = CASH; x < SEND; x += HIT) taiko(mix, x, { gain: 0.3, tone: 64, pan: 0.14 });
+  warmArp(mix, PROG[0].pad, CLAIM, { gain: 0.11, step: 0.11 });
+
+  // Private send: the change going dark.
+  taiko(mix, SEND, { gain: 0.34, tone: 58 });
+  [78, 74, 69].forEach((m, i) => bell(mix, m, CHANGE + i * 0.18, { gain: 0.11, pan: 0.3 - i * 0.3, decay: 1.6 }));
+
+  // Private swap: everything strips back into the one row nobody can fill in.
+  riser(mix, SWAP, (t.swapUnknown - t.swap) / FPS - 0.3, { gain: 0.2 });
+  reverseHit(mix, UNKNOWN - 0.9, 0.9, { gain: 0.3 });
+  braam(mix, 33, UNKNOWN, 2.4, { gain: 0.36 });
+  taiko(mix, UNKNOWN, { gain: 0.62, tone: 50 });
+
+  // All four together, which is the point of the film.
+  reverseHit(mix, CARDS - 1.1, 1.1, { gain: 0.32 });
+  braam(mix, 28, CARDS, 3.0, { gain: 0.42 });
+  braam(mix, 40, CARDS + 0.06, 2.4, { gain: 0.2, pan: 0.25 });
+  taiko(mix, CARDS, { gain: 0.72, tone: 48 });
+  for (let x = CARDS + HIT; x < LINE; x += HIT) {
+    taiko(mix, x, { gain: 0.44, tone: 58, pan: -0.1 });
+    taiko(mix, x + HIT * 0.5, { gain: 0.25, tone: 70, pan: 0.22 });
+  }
+
+  strings(mix, [40, 47, 52], LINE - 0.6, 3.4, { gain: 0.22, shape: 0.7 });
+  reverseHit(mix, end - 0.9, 0.9, { gain: 0.2 });
+  braam(mix, 33, end, Math.max(0.8, dur - end), { gain: 0.18 });
+  taiko(mix, end, { gain: 0.44, tone: 50 });
+  sub(mix, 21, end, Math.max(0.2, dur - end), 0.3);
+  return mix;
+};
+
 for (const [slug, t] of Object.entries(B)) DURATIONS[`refract-${slug}`] = t.duration / FPS;
 
 /* ---------- third-wave instruments ---------------------------------------

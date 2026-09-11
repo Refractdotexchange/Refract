@@ -90,6 +90,7 @@ const bespoke = {
   "one-screen": { id: "OneScreen", ...timing.SCREEN },
   "shielded-flow": { id: "ShieldedFlow", ...timing.SHIELD },
   "private-swap": { id: "PrivateSwap", ...timing.PSWAP },
+  "mainnet-live": { id: "MainnetLive", ...timing.MAINNET },
 };
 
 const out = path.join(here, "motion-cues.json");

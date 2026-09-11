@@ -16,10 +16,11 @@ import { TokenFaces } from "./films/TokenFaces";
 import { OneScreen } from "./films/OneScreen";
 import { ShieldedFlow } from "./films/ShieldedFlow";
 import { PrivateSwap } from "./films/PrivateSwap";
+import { MainnetLive } from "./films/MainnetLive";
 import { Dimensional } from "./films/Dimensional";
 import { FacetSpeaks } from "./films/FacetSpeaks";
 import { QuickCuts } from "./films/QuickCuts";
-import { HEAD, FACES, SCREEN, SHIELD, PSWAP, DIMENSIONAL, QUICK } from "./films/timing";
+import { HEAD, FACES, SCREEN, SHIELD, PSWAP, MAINNET, DIMENSIONAL, QUICK } from "./films/timing";
 import voiceCues from "../music/voice-cues.json";
 import { MotionFilm } from "./motion/MotionFilm";
 import { FILMS } from "./motion/script";
@@ -58,6 +59,7 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="OneScreen" component={OneScreen} durationInFrames={SCREEN.duration} {...base} />
       <Composition id="ShieldedFlow" component={ShieldedFlow} durationInFrames={SHIELD.duration} {...base} />
       <Composition id="PrivateSwap" component={PrivateSwap} durationInFrames={PSWAP.duration} {...base} />
+      <Composition id="MainnetLive" component={MainnetLive} durationInFrames={MAINNET.duration} {...base} />
 
       {/* Three treatments of the same brand, built to be compared: a camera
           orbiting an extruded Facet, Facet speaking to camera with the lip

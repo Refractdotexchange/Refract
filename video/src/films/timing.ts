@@ -213,6 +213,35 @@ export const PSWAP = {
   duration: 716,
 } as const;
 
+/**
+ * MAINNET LIVE — the launch film.
+ *
+ * Four things shipped, so four beats, each carrying a figure taken from a real
+ * run rather than an illustration: the venue spread the router actually found,
+ * the baseline and fill from a simulation against live state, the deposit and
+ * partial spend from the pool, and the swap the pool executed.
+ */
+export const MAINNET = {
+  title: 14,
+  /** Venues report in. */
+  route: 92,
+  routeBest: 176,
+  /** What the fee is carved out of. */
+  cash: 250,
+  cashClaim: 330,
+  /** Any amount in, any part out. */
+  send: 404,
+  sendChange: 476,
+  /** The pool trades, not you. */
+  swap: 548,
+  swapUnknown: 620,
+  /** All four, lit. */
+  cards: 688,
+  line: 754,
+  end: 800,
+  duration: 896,
+} as const;
+
 /** DIMENSIONAL — the camera orbit around an extruded Facet. */
 export const DIMENSIONAL = {
   /** He arrives and the dolly settles. */
