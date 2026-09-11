@@ -858,82 +858,84 @@ CUES["refract-shielded-flow"] = (dur) => {
   const end = s(t.end);
 
   /*
-   * Written as a track rather than a bed. The earlier version had mood and no
-   * tune, which is the reason these scores blur together: there was nothing
-   * to remember. This one has a four-bar hook that states itself under the
-   * deposit, drops out entirely while the proof is generating, and comes back
-   * an octave up on the payment landing.
+   * Scored as a teaser rather than as a bed, which is what the picture has
+   * always wanted: it is a product demo with two reveals in it, and the house
+   * arrangement had no way to hit either of them.
    *
-   * The phrase is written in offsets from the chord root, so it follows the
-   * progression instead of sitting on top of it.
+   * Trailer shape, so the structure carries it rather than a melody. Low
+   * strings hold the floor throughout, taikos mark the beats that matter, and
+   * the two moments the film is actually about — the deposit shielding and
+   * the payment landing — each get a braam. Everything strips out under the
+   * proof so the second one has somewhere to fall from.
    */
-  const HOOK = [
-    [0, 0, 1], [7, 1, 0.5], [10, 1.5, 0.5], [12, 2, 1], [7, 3, 1],
-  ];
-  const ANSWER = [
-    [0, 0, 1], [3, 1, 0.5], [7, 1.5, 0.5], [10, 2, 1.5], [7, 3.5, 0.5],
-  ];
-
   const UNLOCK = s(t.unlock), UP = s(t.unlocked), TYPE = s(t.typeIn);
   const SHIELD = s(t.shielded), OUT = s(t.typeOut);
   const PROVE = s(t.prove), SENT = s(t.sent), CHANGE = s(t.change), LINE = s(t.line);
 
-  // Harmony and rhythm. Drums cut out under the proof so the drop has somewhere
-  // to come from, which is the one thing the previous version never did.
-  bed(mix, dur, (x) => {
-    if (x >= end) return 0.42;
-    if (x < UNLOCK) return 0.22;
-    if (x < TYPE) return 0.45;
-    if (x < SHIELD) return 0.62;
-    if (x < PROVE) return 0.86;
-    if (x < SENT) return 0.3;        // the floor drops out while proving
-    if (x < LINE) return 1;          // and everything returns
-    return 0.9;
-  }, { padGain: 0.16 });
+  // Half-time: trailer hits sit twice as far apart as the house 120 grid.
+  const HIT = BEAT * 2;
 
-  // Driving sixteenths through the two working sections.
-  hats16(mix, SHIELD, PROVE, { gain: 0.05 });
-  hats16(mix, SENT, LINE, { gain: 0.058 });
+  // ---- the floor: low strings, held the whole way through ----
+  const CHORDS = [
+    [33, 40, 45, 52], // Am
+    [29, 36, 41, 48], // F
+    [36, 43, 48, 55], // C
+    [28, 35, 40, 47], // Em
+  ];
+  for (let i = 0, x = 0; x < end; i++, x += 4) {
+    const c = CHORDS[i % CHORDS.length];
+    const span = Math.min(4.4, end - x + 0.4);
+    // Eases back after the closing line so the drop stays the loudest moment.
+    // Left at full weight, the outro measured 2dB above it and upstaged the
+    // thing the whole film builds to.
+    const lift = x < TYPE ? 0.45 : x < PROVE ? 0.8 : x < SENT ? 0.4 : x < LINE ? 1 : 0.55;
+    strings(mix, c, x, span, { gain: 0.26 * lift, shape: lift });
+    sub(mix, c[0] - 12, x, span, 0.4 * lift);
+  }
 
-  // Backbeat with a body. Absent during the proof, like everything else.
-  for (let x = TYPE, i = 0; x < PROVE; x += BEAT, i++) if (i % 4 === 1 || i % 4 === 3) snare(mix, x, 0.3);
-  for (let x = SENT, i = 0; x < LINE; x += BEAT, i++) if (i % 4 === 1 || i % 4 === 3) snare(mix, x, 0.36);
+  // ---- opening: one hit as the window lands, one as the key is derived ----
+  reverseHit(mix, Math.max(0, UNLOCK - 0.7), 0.7, { gain: 0.24 });
+  taiko(mix, UNLOCK, { gain: 0.5, tone: 58 });
+  bell(mix, 81, UP, { gain: 0.1, decay: 1.6 });
 
-  // ---- the signature, and the balance resolving out of nothing ----
-  impact(mix, UNLOCK, { gain: 0.42, tone: 45 });
-  warmArp(mix, PROG[0].pad, UP, { gain: 0.11, step: 0.1 });
+  // ---- the deposit: a pulse starts, and the first reveal lands ----
+  for (let x = TYPE; x < PROVE; x += HIT) {
+    taiko(mix, x, { gain: 0.38, tone: 60, pan: -0.12 });
+    taiko(mix, x + HIT * 0.5, { gain: 0.2, tone: 72, pan: 0.2 });
+  }
+  for (let i = 0; i < 6; i++) tick(mix, TYPE + i * 0.17, { gain: 0.05, pitch: 3000 });
 
-  // ---- the hook states itself under the deposit ----
-  phrase(mix, HOOK, TYPE, PROG[0].root + 12, { gain: 0.13, pan: -0.16, cutoff: 2300 });
-  phrase(mix, ANSWER, TYPE + BAR, PROG[1].root + 12, { gain: 0.13, pan: 0.16, cutoff: 2500 });
+  reverseHit(mix, SHIELD - 0.8, 0.8, { gain: 0.26 });
+  braam(mix, 33, SHIELD, 2.2, { gain: 0.34 });
+  taiko(mix, SHIELD, { gain: 0.62, tone: 52 });
 
-  for (let i = 0; i < 6; i++) tick(mix, TYPE + i * 0.17, { gain: 0.06, pitch: 2900 });
+  for (let i = 0; i < 3; i++) tick(mix, OUT + i * 0.19, { gain: 0.05, pitch: 2700 });
+  taiko(mix, OUT, { gain: 0.34, tone: 64, pan: 0.15 });
 
-  impact(mix, SHIELD, { gain: 0.5, tone: 38 });
-  phrase(mix, HOOK, SHIELD, PROG[2].root + 12, { gain: 0.15, pan: 0, cutoff: 2900 });
-  [74, 78, 81].forEach((m, i) => bell(mix, m, SHIELD + i * 0.06, { gain: 0.12, pan: -0.35 + i * 0.35, decay: 1.1 }));
+  // ---- proving: strip to a heartbeat and climb ----
+  riser(mix, PROVE, (t.sent - t.prove) / FPS - 0.25, { gain: 0.24 });
+  for (let x = PROVE; x < SENT - 0.4; x += HIT) taiko(mix, x, { gain: 0.22, tone: 46 });
+  reverseHit(mix, SENT - 1.1, 1.1, { gain: 0.34 });
 
-  for (let i = 0; i < 3; i++) tick(mix, OUT + i * 0.19, { gain: 0.06, pitch: 2600 });
-  phrase(mix, ANSWER, OUT, PROG[3].root + 12, { gain: 0.14, pan: -0.1, cutoff: 2600 });
+  // ---- the drop: the payment lands ----
+  braam(mix, 28, SENT, 2.6, { gain: 0.4 });
+  braam(mix, 40, SENT + 0.06, 2.2, { gain: 0.2, pan: 0.25 });
+  taiko(mix, SENT, { gain: 0.72, tone: 48 });
+  for (let x = SENT + HIT; x < LINE - 0.5; x += HIT) {
+    const decay = 1 - (x - SENT) / Math.max(0.5, LINE - SENT) * 0.45;
+    taiko(mix, x, { gain: 0.42 * decay, tone: 58, pan: -0.1 });
+    taiko(mix, x + HIT * 0.5, { gain: 0.24 * decay, tone: 70, pan: 0.22 });
+  }
 
-  // ---- proving: everything strips back to a rise ----
-  riser(mix, PROVE, (t.sent - t.prove) / FPS - 0.3, { gain: 0.2 });
-  for (let x = PROVE; x < SENT; x += BEAT * 2) kick(mix, x, 0.4);
+  // ---- the change: descending, and deliberately unresolved ----
+  [81, 76, 71].forEach((m, i) => bell(mix, m, CHANGE + i * 0.22, { gain: 0.11, pan: 0.3 - i * 0.3, decay: 1.9 }));
+  strings(mix, [40, 47, 52], LINE - 0.6, 3.2, { gain: 0.22, shape: 0.7 });
 
-  // ---- paid: the drop, hook an octave up ----
-  impact(mix, SENT, { gain: 0.6, tone: 40 });
-  phrase(mix, HOOK, SENT, PROG[0].root + 12, { gain: 0.17, pan: 0, cutoff: 3400, octave: 1 });
-  phrase(mix, ANSWER, SENT + BAR, PROG[1].root + 12, { gain: 0.16, pan: 0.12, cutoff: 3200, octave: 1 });
-  warmArp(mix, PROG[0].pad, SENT + 0.12, { gain: 0.12, step: 0.11 });
-
-  // ---- the change: three bells that descend and stop, rather than resolve ----
-  [78, 74, 69].forEach((m, i) => bell(mix, m, CHANGE + i * 0.2, { gain: 0.12, pan: 0.3 - i * 0.3, decay: 1.7 }));
-  swell(mix, PROG[0].pad, LINE - 1.2, 1.9, { gain: 0.19 });
-
-  riser(mix, end - 1.4, 1.4, { gain: 0.16 });
-  impact(mix, end, { gain: 0.42, tone: 38 });
-  pad(mix, PROG[0].pad, end, dur - end + 0.6, { gain: 0.2, open: 1 });
-  sub(mix, PROG[0].sub, end, Math.max(0.1, dur - end), 0.45);
+  // ---- end card ----
+  reverseHit(mix, end - 0.9, 0.9, { gain: 0.2 });
+  braam(mix, 33, end, Math.max(0.8, dur - end), { gain: 0.18 });
+  taiko(mix, end, { gain: 0.44, tone: 50 });
+  sub(mix, 21, end, Math.max(0.2, dur - end), 0.3);
   return mix;
 };
 
@@ -1014,6 +1016,77 @@ function hats16(mix, from, to, { gain = 0.055 } = {}) {
     const accent = i % 4 === 2 ? 1.5 : i % 2 === 0 ? 1 : 0.55;
     hat(mix, t, { gain: gain * accent, open: i % 8 === 6, pan: i % 2 ? 0.22 : -0.18 });
   }
+}
+
+/* ---------- cinematic set -------------------------------------------------
+
+   Trailer instruments. The existing palette is a house set: pads, plucks,
+   light drums. None of it can carry a teaser, which needs weight at the
+   bottom and something that hits rather than arrives.
+--------------------------------------------------------------------------- */
+
+/** Taiko: a big tuned drum. Body, skin and room, in that order. */
+function taiko(mix, t, { gain = 0.5, tone = 62, pan = 0 } = {}) {
+  const len = samples(0.9);
+  const body = sineSweep(tone * 1.9, tone, len, 4);
+  const skin = svfLowpass(noise(len), 900, 0.8);
+  const benv = expEnv(len, 0.16);
+  const senv = expEnv(len, 0.035);
+  const out = new Float32Array(len);
+  for (let i = 0; i < len; i++) out[i] = body[i] * benv[i] * 0.9 + skin[i] * senv[i] * 0.35;
+  mix.add(out, t, { gain, pan, send: 0.4 });
+}
+
+/**
+ * Braam: the low detuned brass hit a teaser is built around. A stack of saws
+ * a long way apart, opened with a fast filter sweep so it blooms rather than
+ * simply starting.
+ */
+function braam(mix, midi, t, dur, { gain = 0.34, pan = 0 } = {}) {
+  const len = samples(dur);
+  const out = new Float32Array(len);
+  // Wide detune is the whole character; tight tuning sounds like a synth pad.
+  [0, 0.3, -0.42, 12, 7].forEach((off, i) => {
+    const v = saw(hz(midi + off), len, 3, 0.012 + i * 0.004);
+    for (let k = 0; k < len; k++) out[k] += v[k] * (i > 2 ? 0.4 : 1);
+  });
+  const cut = new Float32Array(len);
+  for (let i = 0; i < len; i++) {
+    const k = i / len;
+    cut[i] = 180 + 2400 * Math.min(1, k * 5) * (1 - k * 0.55);
+  }
+  const f = svfLowpass(out, cut, 0.7);
+  const env = adsr(len, 0.035, 0.25, 0.7, Math.min(1.2, dur * 0.5));
+  for (let i = 0; i < len; i++) f[i] *= env[i] * 0.2;
+  mix.add(f, t, { gain, pan, send: 0.55 });
+}
+
+/** Sustained string-ish bed that swells. Carries tension between the hits. */
+function strings(mix, midis, t, dur, { gain = 0.2, pan = 0, shape = 1 } = {}) {
+  const len = samples(dur);
+  midis.forEach((m, i) => {
+    const v = saw(hz(m), len, 4, 0.009 + i * 0.0015);
+    const cut = new Float32Array(len);
+    for (let k = 0; k < len; k++) {
+      const x = k / len;
+      cut[k] = 400 + 2600 * Math.pow(x, 1.4) * shape;
+    }
+    const f = svfLowpass(v, cut, 0.55);
+    // Slow in, slow out, so it reads as bowed rather than triggered.
+    for (let k = 0; k < len; k++) {
+      const x = k / len;
+      f[k] *= Math.min(1, x * 4) * Math.min(1, (1 - x) * 6);
+    }
+    mix.add(f, t, { gain: gain / midis.length, pan: pan - 0.4 + (i / Math.max(1, midis.length - 1)) * 0.8, send: 0.6 });
+  });
+}
+
+/** Reverse swell into a hit: the half second that tells you something lands. */
+function reverseHit(mix, t, dur, { gain = 0.3 } = {}) {
+  const len = samples(dur);
+  const n = svfLowpass(noise(len), 5200, 0.6);
+  for (let i = 0; i < len; i++) n[i] *= Math.pow(i / len, 2.4);
+  mix.add(n, t, { gain, send: 0.5 });
 }
 
 /* ---------- the comparison set -------------------------------------------
