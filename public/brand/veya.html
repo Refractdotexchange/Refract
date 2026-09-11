@@ -1,0 +1,151 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;overflow:hidden;background:#000}
+  .stage{position:relative;width:1600px;height:900px;padding:70px 84px;background:
+    radial-gradient(ellipse 52% 82% at 20% 42%, rgba(163,230,53,.17), transparent 62%),
+    radial-gradient(ellipse 52% 82% at 80% 42%, rgba(124,58,237,.24), transparent 62%),
+    #000;}
+  .grid{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(ellipse 84% 94% at 50% 50%,#000 24%,transparent 82%);}
+  /* the seam where the two sides meet */
+  .seam{position:absolute;left:50%;top:112px;bottom:210px;width:1px;
+        background:linear-gradient(180deg,transparent,rgba(255,255,255,.14),transparent)}
+
+  .inner{position:relative;z-index:2;height:100%;display:flex;flex-direction:column}
+  .kick{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.3em;
+        text-transform:uppercase;color:#67715f;display:flex;align-items:center;gap:14px;
+        justify-content:center;margin-bottom:6px}
+  .kick .bar{width:40px;height:2px;background:#a3e635;display:inline-block}
+  .kick .bar2{width:40px;height:2px;background:#7c3aed;display:inline-block}
+
+  .lockup{flex:1;display:flex;align-items:center;justify-content:center;gap:70px}
+  .side{display:flex;flex-direction:column;align-items:center;gap:20px;width:520px}
+  .wordmark{display:flex;align-items:center;gap:20px}
+  .rname{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:74px;
+         letter-spacing:-.03em;color:#f2f5ee}
+  .role{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.22em;
+        text-transform:uppercase;color:#67715f;text-align:center;line-height:1.8}
+  .x{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:56px;color:#4a4a4a;
+     margin-top:-26px}
+
+  .tag{text-align:center;font-family:'Space Grotesk',sans-serif;font-weight:700;
+       font-size:50px;letter-spacing:-.03em;color:#f2f5ee;margin-bottom:16px}
+  .tag b{background:linear-gradient(96deg,#c9f56e,#a3e635 40%,#9a7bf0 62%,#7c3aed);
+         -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{text-align:center;font-family:'Space Grotesk',sans-serif;font-size:25px;
+       color:#9ba695;margin-bottom:36px}
+
+  .cards{display:flex;gap:20px}
+  .card{flex:1;border-radius:20px;padding:24px 28px;
+        background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09)}
+  .card.l{border-color:rgba(163,230,53,.36);background:rgba(163,230,53,.07)}
+  .card.r{border-color:rgba(124,58,237,.42);background:rgba(124,58,237,.1)}
+  .ct{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.2em;
+      text-transform:uppercase;margin-bottom:10px}
+  .card.l .ct{color:#a3e635}
+  .card.r .ct{color:#a78bfa}
+  .cb{font-family:'Space Grotesk',sans-serif;font-size:21px;color:#c9d4bd;line-height:1.4}
+
+  .foot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:30px}
+  .url{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:29px;color:#f2f5ee}
+  .meta{margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:14px;
+        letter-spacing:.19em;text-transform:uppercase;color:#67715f}
+  .hand{font-family:'IBM Plex Mono',monospace;font-size:14px;letter-spacing:.19em;
+        text-transform:uppercase;color:#67715f;text-align:right;line-height:1.8}
+</style>
+<div class="stage">
+  <div class="grid"></div>
+  <div class="seam"></div>
+  <div class="inner">
+    <div class="kick"><span class="bar"></span> Partnership <span class="bar2"></span></div>
+
+    <div class="lockup">
+      <!-- REFRACT -->
+      <div class="side">
+        <div class="wordmark">
+          <svg width="86" height="86" viewBox="0 0 400 400">
+            <defs>
+              <linearGradient id="face" x1="162" y1="84" x2="162" y2="300" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#a3e635" stop-opacity=".30"/>
+                <stop offset="100%" stop-color="#4b7a12" stop-opacity=".05"/>
+              </linearGradient>
+              <linearGradient id="edge" x1="162" y1="76" x2="162" y2="308" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#e6ffb3"/><stop offset="50%" stop-color="#a3e635"/>
+                <stop offset="100%" stop-color="#4b7a12"/>
+              </linearGradient>
+            </defs>
+            <path d="M30 192 H116" stroke="#f2f5ee" stroke-width="20" stroke-linecap="round" opacity=".92"/>
+            <path d="M162 84 L252 300 H72 Z" fill="url(#face)" stroke="url(#edge)"
+                  stroke-width="20" stroke-linejoin="round"/>
+            <g stroke-width="13" stroke-linecap="round" opacity=".96">
+              <path d="M215 186 L372 136" stroke="#f8fff0"/>
+              <path d="M219 199 L376 176" stroke="#e6ffb3"/>
+              <path d="M223 212 L378 216" stroke="#c9f56e"/>
+              <path d="M227 225 L374 256" stroke="#a3e635"/>
+              <path d="M231 238 L366 294" stroke="#79b520"/>
+            </g>
+          </svg>
+          <span class="rname">REFRACT</span>
+        </div>
+        <div class="role">Routing &amp; execution<br>Chain 4663</div>
+      </div>
+
+      <div class="x">&times;</div>
+
+      <!-- VEYA -->
+      <div class="side">
+        <svg width="330" height="96" viewBox="0 0 330 96">
+          <defs>
+            <linearGradient id="vy" x1="0" y1="0" x2="330" y2="96" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#c4b5fd"/>
+              <stop offset="45%" stop-color="#8b5cf6"/>
+              <stop offset="100%" stop-color="#6d28d9"/>
+            </linearGradient>
+          </defs>
+          <g stroke="url(#vy)" stroke-width="11" fill="none" stroke-linecap="square">
+            <!-- V -->
+            <path d="M6 10 L34 84 L62 10"/>
+            <!-- E as three bars -->
+            <path d="M88 14 H140"/><path d="M88 47 H134"/><path d="M88 80 H140"/>
+            <!-- Y -->
+            <path d="M166 10 L194 47 L222 10"/><path d="M194 47 V84"/>
+            <!-- A -->
+            <path d="M246 84 L276 10 L306 84"/>
+          </g>
+          <path d="M276 52 L292 84 H260 Z" fill="url(#vy)"/>
+        </svg>
+        <div class="role">Infrastructure for<br>autonomous agents</div>
+      </div>
+    </div>
+
+    <div class="tag">Bounded agents. <b>Smarter execution.</b></div>
+    <div class="sub">Agents that trade without broadcasting what they are about to do.</div>
+
+    <div class="cards">
+      <div class="card l">
+        <div class="ct">REFRACT brings</div>
+        <div class="cb">Every venue on 4663 quoted, best route per trade, and swaps the pool executes so the chain never records which wallet paid.</div>
+      </div>
+      <div class="card r">
+        <div class="ct">VEYA brings</div>
+        <div class="cb">Autonomous agents with bounded authority, running on chain with actions anyone can verify.</div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div>
+        <div class="url">refract.exchange</div>
+        <div class="meta">Non&#8209;custodial &middot; zero&#8209;knowledge</div>
+      </div>
+      <div class="hand">@RefractHq_ &middot; @veya<br>Robinhood Chain &middot; 4663</div>
+    </div>
+  </div>
+</div>
