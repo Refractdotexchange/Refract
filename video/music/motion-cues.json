@@ -811,6 +811,22 @@
       "line": 658,
       "end": 718,
       "duration": 814
+    },
+    "private-swap": {
+      "id": "PrivateSwap",
+      "window": 16,
+      "token": 72,
+      "quoteFrom": 128,
+      "venueGap": 18,
+      "venues": 5,
+      "pick": 236,
+      "prove": 292,
+      "execute": 372,
+      "chain": 428,
+      "unknown": 496,
+      "line": 560,
+      "end": 620,
+      "duration": 716
     }
   },
   "three": {

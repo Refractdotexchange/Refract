@@ -181,6 +181,38 @@ export const SHIELD = {
   duration: 814,
 } as const;
 
+/**
+ * PRIVATE SWAP — the routing engine and the shielded pool, meeting.
+ *
+ * The only film where both halves of the product are on screen at once: every
+ * venue on the chain is quoted, and the pool rather than the trader executes
+ * the winner. It carries the honest line too, because the trade is visible and
+ * only the trader is not.
+ */
+export const PSWAP = {
+  /** Balance, already shielded. */
+  window: 16,
+  /** A token is chosen. */
+  token: 72,
+  /** Venues start reporting, one every `venueGap`. */
+  quoteFrom: 128,
+  venueGap: 18,
+  venues: 5,
+  /** The winner lifts out of the list. */
+  pick: 236,
+  /** Proving, in the browser. */
+  prove: 292,
+  /** The pool executes. */
+  execute: 372,
+  /** The chain's version of events. */
+  chain: 428,
+  /** And the one row it cannot fill in. */
+  unknown: 496,
+  line: 560,
+  end: 620,
+  duration: 716,
+} as const;
+
 /** DIMENSIONAL — the camera orbit around an extruded Facet. */
 export const DIMENSIONAL = {
   /** He arrives and the dolly settles. */

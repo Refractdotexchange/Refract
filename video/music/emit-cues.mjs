@@ -89,6 +89,7 @@ const bespoke = {
   "token-faces": { id: "TokenFaces", ...timing.FACES },
   "one-screen": { id: "OneScreen", ...timing.SCREEN },
   "shielded-flow": { id: "ShieldedFlow", ...timing.SHIELD },
+  "private-swap": { id: "PrivateSwap", ...timing.PSWAP },
 };
 
 const out = path.join(here, "motion-cues.json");

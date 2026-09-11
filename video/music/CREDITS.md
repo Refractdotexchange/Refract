@@ -8,7 +8,9 @@ Where a supplied track is used instead, it is listed here. These files are
 redistributing the audio itself, so the repo carries the credit and not the
 file.
 
-## ShieldedFlow — `refract-shielded-flow-track.wav`
+## ShieldedFlow and PrivateSwap
+
+`refract-shielded-flow-track.wav`, `refract-private-swap-track.wav`
 
 > "Cinematic Action Teaser NoCopyright Background Music / Rush"
 > by **ArcticFoxMusic — No Copyright Music** (2024)
@@ -21,8 +23,8 @@ wherever the video is published. **Put the line above in the description of
 any post carrying this film**, and check the artist's own terms before using
 it in anything paid or sponsored.
 
-Processing applied: trimmed to 27.13s, 1.4s fade under the end card, and
-normalised to -15 LUFS to match the generated cues.
+Processing applied: trimmed to each film's length (27.13s and 23.87s), faded
+under the end card, and normalised to -15 LUFS to match the generated cues.
 
 The generated score for this film still exists and is rebuilt with
 `node music/compose.mjs shielded-flow`. Switching back is one filename in
