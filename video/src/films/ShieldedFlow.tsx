@@ -103,7 +103,20 @@ export const ShieldedFlow: React.FC = () => {
 
   return (
     <Stage>
-      <Audio src={staticFile("music/refract-shielded-flow.wav")} />
+      {/*
+        * Supplied track rather than the generated score: "Rush" by
+        * ArcticFoxMusic, trimmed to length, faded under the end card and
+        * matched to the same -15 LUFS as the rest so a thread of these films
+        * does not jump in volume.
+        *
+        * The licence requires a credit wherever this is published. It lives in
+        * music/CREDITS.md, and the audio itself is gitignored: the licence
+        * covers using the track in a video, not redistributing the file.
+        *
+        * The generated score is still built by `node music/compose.mjs
+        * shielded-flow` and is one filename away if this ever needs replacing.
+        */}
+      <Audio src={staticFile("music/refract-shielded-flow-track.wav")} />
       <AbsoluteFill style={{ opacity: outro }}>
         {/* ---------------- the app ---------------- */}
         <div
