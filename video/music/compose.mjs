@@ -841,6 +841,51 @@ CUES["refract-one-screen"] = (dur) => {
   return mix;
 };
 
+// SHIELDED FLOW — A minor, same family as ONE SCREEN, because it is the other
+// film that drives the real product. Quiet under the interface; the two public
+// events get weight, and the change gets a figure that resolves downward and
+// stops rather than landing.
+CUES["refract-shielded-flow"] = (dur) => {
+  const mix = new Mix(dur);
+  const t = B["shielded-flow"];
+  const end = s(t.end);
+  bed(mix, dur, (x) => {
+    if (x >= end) return 0.42;
+    if (x < s(t.unlocked)) return 0.28;
+    if (x < s(t.shield)) return 0.5;
+    if (x < s(t.prove)) return 0.66;
+    if (x < s(t.sent)) return 0.84;
+    return 0.95;
+  }, { padGain: 0.15 });
+
+  // The signature, then the balance resolving out of nothing.
+  impact(mix, s(t.unlock), { gain: 0.4, tone: 45 });
+  warmArp(mix, PROG[0].pad, s(t.unlocked), { gain: 0.11, step: 0.1 });
+
+  // Typing an amount nobody had to pick from a list.
+  for (let i = 0; i < 6; i++) tick(mix, s(t.typeIn) + i * 0.17, { gain: 0.07, pitch: 2900 });
+  impact(mix, s(t.shielded), { gain: 0.5, tone: 38 });
+  [74, 78, 81].forEach((m, i) => bell(mix, m, s(t.shielded) + i * 0.06, { gain: 0.13, pan: -0.35 + i * 0.35, decay: 1.1 }));
+
+  for (let i = 0; i < 3; i++) tick(mix, s(t.typeOut) + i * 0.19, { gain: 0.065, pitch: 2600 });
+
+  // Proving: a rising figure under the three stages, since it is the only
+  // part of this the viewer waits through.
+  riser(mix, s(t.prove), (t.sent - t.prove) / FPS - 0.4, { gain: 0.16 });
+  impact(mix, s(t.sent), { gain: 0.54, tone: 40 });
+  warmArp(mix, PROG[0].pad, s(t.sent) + 0.12, { gain: 0.13, step: 0.11 });
+
+  // The change. Deliberately unresolved: bells descending, then nothing.
+  [78, 74, 69].forEach((m, i) => bell(mix, m, s(t.change) + i * 0.2, { gain: 0.12, pan: 0.3 - i * 0.3, decay: 1.7 }));
+  swell(mix, PROG[0].pad, s(t.line) - 1.2, 1.9, { gain: 0.19 });
+
+  riser(mix, end - 1.4, 1.4, { gain: 0.16 });
+  impact(mix, end, { gain: 0.42, tone: 38 });
+  pad(mix, PROG[0].pad, end, dur - end + 0.6, { gain: 0.2, open: 1 });
+  sub(mix, PROG[0].sub, end, Math.max(0.1, dur - end), 0.45);
+  return mix;
+};
+
 for (const [slug, t] of Object.entries(B)) DURATIONS[`refract-${slug}`] = t.duration / FPS;
 
 /* ---------- the comparison set -------------------------------------------
