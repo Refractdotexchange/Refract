@@ -31,6 +31,23 @@ const EXT_TUPLE = [{
 /* Mirrors the contract exactly: keccak of the encoded struct, reduced. */
 const extHash = (e) => BigInt(keccak256(encodeAbiParameters(EXT_TUPLE, [e]))) % FIELD;
 
+const SWAP_TUPLE = {
+  type: "tuple",
+  components: [
+    { name: "tokenOut", type: "address" },
+    { name: "amountOutMin", type: "uint256" },
+    { name: "recipient", type: "address" },
+    { name: "routerCalldata", type: "bytes" },
+  ],
+};
+/*
+ * A swap hashes ExtData and SwapData together. The preimage deliberately
+ * differs from a withdrawal's, so a proof built for one cannot be replayed
+ * against the other.
+ */
+const swapHash = (e, sd) =>
+  BigInt(keccak256(encodeAbiParameters([EXT_TUPLE[0], SWAP_TUPLE], [e, sd]))) % FIELD;
+
 const fixtures = [];
 const flat = (proof, sig) => [
   BigInt(proof.pi_a[0]), BigInt(proof.pi_a[1]),
@@ -196,6 +213,45 @@ async function main() {
   } catch {
     console.log("  rejected by the circuit — value is conserved");
   }
+
+  /* ---------------- 4. the same spend, routed through the pool ------------- */
+  const SWAPIN = parseEther("1.2");
+  const swapChange = note(DEPOSIT - SWAPIN), swapPad = note(0n), swapDummy = note(0n);
+  const swapData = {
+    tokenOut: "0x1111111111111111111111111111111111111111",
+    amountOutMin: SWAPIN * 1000n,
+    recipient: "0x000000000000000000000000000000000000dEaD",
+    routerCalldata: "0x51dd09c7", // swapExactEthForToken()
+  };
+  const extSwap = {
+    recipient: "0x0000000000000000000000000000000000000000",
+    extAmount: -SWAPIN,
+    relayer: "0x0000000000000000000000000000000000000000",
+    fee: 0n,
+    encryptedOutput1: "0x55",
+    encryptedOutput2: "0x66",
+  };
+  console.log(`\n[4] route ${formatEther(SWAPIN)} ETH through the pool instead of paying it out`);
+  allOk &= await prove({
+    root: path.root.toString(),
+    publicAmount: fieldAmount(-SWAPIN).toString(),
+    extDataHash: swapHash(extSwap, swapData).toString(),
+    inNullifiers: [nullify(d1, 0), nullify(swapDummy, 11)].map(String),
+    outCommitments: [commit(swapChange), commit(swapPad)].map(String),
+    inAmount: [d1.amount, 0n].map(String),
+    inNullifier: [d1.nullifier, swapDummy.nullifier].map(String),
+    inSecret: [d1.secret, swapDummy.secret].map(String),
+    inLeafIndex: ["0", "11"],
+    inPathElements: [path.pathElements.map(String), ep.pathElements.map(String)],
+    inPathIndices: [path.pathIndices.map(String), ep.pathIndices.map(String)],
+    outAmount: [swapChange.amount, swapPad.amount].map(String),
+    outNullifier: [swapChange.nullifier, swapPad.nullifier].map(String),
+    outSecret: [swapChange.secret, swapPad.secret].map(String),
+  }, `prove pool-executed swap`, "swap", {
+    ...extSwap, extAmount: extSwap.extAmount.toString(), fee: "0",
+    root: path.root.toString(),
+    swap: { ...swapData, amountOutMin: swapData.amountOutMin.toString() },
+  });
 
   fs.mkdirSync("../artifacts", { recursive: true });
   fs.writeFileSync("../artifacts/joinsplit-fixture.json", JSON.stringify(

@@ -44,6 +44,11 @@ interface IHasher {
     function poseidon(uint256[2] calldata input) external pure returns (uint256);
 }
 
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
+}
+
 contract RefractPool {
     /* ---------------------------------------------------------------- config */
 
@@ -62,6 +67,13 @@ contract RefractPool {
 
     IVerifier public immutable verifier;
     IHasher public immutable hasher;
+    /**
+     * The one contract the pool may call when swapping. Fixed at deploy: an
+     * arbitrary call target would let anyone hand the pool a payload that
+     * transfers its balance somewhere else, which is the single most common
+     * way a contract like this gets emptied.
+     */
+    address public immutable router;
 
     /* ----------------------------------------------------------------- state */
 
@@ -83,6 +95,8 @@ contract RefractPool {
     event NewCommitment(bytes32 indexed commitment, uint32 leafIndex, bytes encryptedNote);
     event NewNullifier(bytes32 indexed nullifier);
     event PublicMovement(address indexed recipient, int256 extAmount, uint256 fee);
+    /** A trade the pool executed. Says what moved, never whose note funded it. */
+    event ShieldedSwap(address indexed tokenOut, address indexed recipient, uint256 amountIn, uint256 amountOut);
 
     /* ---------------------------------------------------------------- errors */
 
@@ -96,6 +110,9 @@ contract RefractPool {
     error FeeTooHigh();
     error TransferFailed();
     error InvalidRecipient();
+    error SwapFailed();
+    error InsufficientOutput();
+    error NotASpend();
 
     /* ------------------------------------------------------------- structures */
 
@@ -129,11 +146,25 @@ contract RefractPool {
         bytes encryptedOutput2;
     }
 
+    /**
+     * Everything a swap needs that a withdrawal does not. Hashed together with
+     * `ExtData`, so the proof pins the trade as tightly as it pins a payout.
+     */
+    struct SwapData {
+        address tokenOut;
+        uint256 amountOutMin;
+        /// Where the bought token lands. Use an address with no history.
+        address recipient;
+        /// Calldata for the router. The target is fixed; only the trade varies.
+        bytes routerCalldata;
+    }
+
     /* ----------------------------------------------------------- constructor */
 
-    constructor(IVerifier _verifier, IHasher _hasher) {
+    constructor(IVerifier _verifier, IHasher _hasher, address _router) {
         verifier = _verifier;
         hasher = _hasher;
+        router = _router;
 
         bytes32 currentZero = bytes32(uint256(keccak256("refract.pool.v2")) % FIELD_SIZE);
         zeros[0] = currentZero;
@@ -214,6 +245,96 @@ contract RefractPool {
         emit PublicMovement(extData.recipient, extData.extAmount, extData.fee);
     }
 
+    /* ------------------------------------------------------------------ swap */
+
+    /**
+     * Spend notes by trading them, so the chain records that the pool swapped
+     * rather than that you did.
+     *
+     * The proof is the same one a withdrawal uses. Spending a note to a router
+     * is not a different claim from spending it to a person: either way you are
+     * proving you own notes worth `extAmount` and that the sums balance. That
+     * is why this needs no second circuit and no second ceremony.
+     *
+     * What it hides is the trader, not the trade. The swap is on chain and so
+     * is its size. What is missing is the link between it and whoever funded
+     * it, and the proceeds land at an address with no history.
+     *
+     * The output is not shielded. Notes here are denominated in ETH, so a token
+     * bought through the pool leaves it. Holding token notes needs the asset
+     * inside the commitment, which is a new circuit.
+     */
+    function swap(
+        Proof calldata proof,
+        TransactArgs calldata args,
+        ExtData calldata extData,
+        SwapData calldata swapData
+    ) external {
+        if (!isKnownRoot(args.root)) revert UnknownRoot();
+        if (args.inNullifiers[0] == args.inNullifiers[1]) revert DuplicateNullifier();
+        for (uint256 i = 0; i < args.inNullifiers.length; i++) {
+            if (nullifierSpent[args.inNullifiers[i]]) revert NullifierUsed();
+        }
+
+        // A swap only ever spends. Allowing a deposit here would let value
+        // arrive and be routed in the same call, which nothing checks for.
+        if (extData.extAmount >= 0) revert NotASpend();
+        // No msg.value check: this function is not payable, so the compiler
+        // already rejects any ETH sent with it.
+        if (swapData.recipient == address(0)) revert InvalidRecipient();
+        if (swapData.amountOutMin == 0) revert InsufficientOutput();
+        if (extData.extAmount <= -MAX_EXT_AMOUNT) revert AmountOutOfRange();
+        if (extData.fee >= uint256(MAX_EXT_AMOUNT)) revert FeeTooHigh();
+
+        /*
+         * Both structs are bound, and the preimage deliberately differs from
+         * the one `transact` hashes. A proof built for a withdrawal therefore
+         * cannot be replayed here to route the same notes somewhere else, and
+         * a watcher cannot rewrite the token, the minimum or the recipient of
+         * a swap they see in the mempool.
+         */
+        if (uint256(keccak256(abi.encode(extData, swapData))) % FIELD_SIZE != uint256(args.extDataHash)) {
+            revert BadProof();
+        }
+        if (args.publicAmount != _publicAmount(extData.extAmount, extData.fee)) revert WrongValue();
+
+        uint256[] memory input = new uint256[](7);
+        input[0] = uint256(args.root);
+        input[1] = args.publicAmount;
+        input[2] = uint256(args.extDataHash);
+        input[3] = uint256(args.inNullifiers[0]);
+        input[4] = uint256(args.inNullifiers[1]);
+        input[5] = uint256(args.outCommitments[0]);
+        input[6] = uint256(args.outCommitments[1]);
+
+        if (!verifier.verifyProof(proof.a, proof.b, proof.c, input)) revert BadProof();
+
+        // Spent and inserted before the router is called. The router is a
+        // foreign contract, and a note that is still spendable while it has
+        // control is a note that can be spent twice.
+        for (uint256 i = 0; i < args.inNullifiers.length; i++) {
+            nullifierSpent[args.inNullifiers[i]] = true;
+            emit NewNullifier(args.inNullifiers[i]);
+        }
+        _insert(args.outCommitments[0], extData.encryptedOutput1);
+        _insert(args.outCommitments[1], extData.encryptedOutput2);
+
+        uint256 amountIn = uint256(-extData.extAmount);
+
+        // Measured as a balance delta rather than trusting a return value, so
+        // a router that reports more than it delivered cannot short the user.
+        uint256 before = IERC20(swapData.tokenOut).balanceOf(address(this));
+        (bool ok, ) = router.call{value: amountIn}(swapData.routerCalldata);
+        if (!ok) revert SwapFailed();
+        uint256 received = IERC20(swapData.tokenOut).balanceOf(address(this)) - before;
+        if (received < swapData.amountOutMin) revert InsufficientOutput();
+
+        if (!IERC20(swapData.tokenOut).transfer(swapData.recipient, received)) revert TransferFailed();
+        if (extData.fee > 0) _payOut(payable(extData.relayer), extData.fee);
+
+        emit ShieldedSwap(swapData.tokenOut, swapData.recipient, amountIn, received);
+    }
+
     /**
      * Signed movement folded into one field element, matching the circuit's
      * `sumIn + publicAmount === sumOut`. Negatives wrap, which is how a field
@@ -284,6 +405,11 @@ contract RefractPool {
     }
 
     /* ------------------------------------------------------------- internals */
+
+    /// Accepts ETH only from the router mid-swap, never as a bare deposit.
+    receive() external payable {
+        require(msg.sender == router, "use transact()");
+    }
 
     function _payOut(address payable to, uint256 amount) internal {
         if (amount == 0) return;

@@ -108,27 +108,54 @@ export const PHASES: Phase[] = [
   },
   {
     n: "02b",
+    title: "Private balances",
+    status: "live",
+    summary:
+      "A shielded pool on chain 4663. Deposit any amount, spend any part of it to an address that was never linked to you, and the remainder comes back as a hidden note only you can open. Non-custodial: there is no operator, no admin key and no server that knows your balance.",
+    items: [
+      {
+        label: "Hidden amounts",
+        note: "Each note carries its own value, so one pool holds every size. Fixed denominations would split users into a smaller crowd per amount, which is the opposite of what an anonymity set needs.",
+      },
+      {
+        label: "Partial spends",
+        note: "Spend part of a note and the change returns encrypted to you. Only what you withdraw is ever published.",
+      },
+      {
+        label: "Balances rebuilt in the browser",
+        note: "Notes travel encrypted beside their commitment and your wallet trial-decrypts the stream locally. Asking a server which notes are yours would hand it your whole position.",
+      },
+      {
+        label: "Multi-party trusted setup",
+        note: "Not done. Phase one is currently a locally generated file, which means whoever generated it could forge a proof. Real funds should wait for this.",
+      },
+      { label: "Contract audit before any size" },
+    ],
+    gate:
+      "Live and working, and deliberately not promoted for real money yet. The cryptography is sound and the contract is non-custodial, but a Groth16 setup is only as trustworthy as its ceremony, and ours has had one participant. That is the honest blocker and it is named here rather than buried.",
+  },
+  {
+    n: "02c",
     title: "Private swaps",
     status: "next",
     summary:
-      "A shielded vault on chain 4663. Funds are pooled so that a swap between two users never touches the chain, which is what makes it private from observers, MEV and chain analysis.",
+      "The pool itself trades through the REFRACT router, so what lands on chain is that the pool swapped, never that your wallet did. The routing engine and the shielded pool are the two halves of this product and this is where they meet.",
     items: [
       {
-        label: "Vault contract",
-        note: "Written and tested: 21 tests including a fuzz run proving recovery can never exceed what you deposited. Not yet audited or deployed.",
+        label: "Pool-executed swaps",
+        note: "A spend sends value to the router instead of to a recipient, and the proceeds go to an address with no history. The proof is the same one a withdrawal uses, so this needs no new circuit and no new ceremony.",
       },
       {
-        label: "Permissionless escape hatch",
-        note: "If the operator goes silent for the escape delay, any depositor recovers up to their own net deposit without asking anyone.",
+        label: "Router fixed at deploy",
+        note: "The pool may call exactly one address. An arbitrary call target would let anyone drain it.",
       },
       {
-        label: "Off-chain balances and internal swaps",
-        note: "The part that makes trades private, and the part that makes the vault custodial.",
+        label: "Shielded proceeds",
+        note: "Not in the first version. Notes are denominated in ETH, so a token bought through the pool leaves it. Holding token notes needs the asset in the commitment and a new circuit.",
       },
-      { label: "Audit before any mainnet deposit" },
     ],
     gate:
-      "The vault is custodial and we will not pretend otherwise. Pooled funds, balances tracked off-chain, and a normal withdrawal needs an operator signature. The router stays non-custodial and using the vault is opt-in, so nobody is moved into a different trust model without choosing it.",
+      "What this hides is the trader, not the trade. The swap is visible on chain and so is its size; what is missing is the link between it and whoever funded it. Saying otherwise would be a lie that gets someone hurt.",
   },
   {
     n: "03",
