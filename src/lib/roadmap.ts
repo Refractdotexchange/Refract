@@ -67,7 +67,7 @@ export const PHASES: Phase[] = [
     items: [
       {
         label: "Dedicated RPC endpoint",
-        note: "The biggest UX problem today. Public endpoints rate-limit, which is why partial-scan handling exists at all.",
+        note: "Now the single point of failure, not just a UX gripe. The public fallback refused eth_getLogs without a paid token, which silently broke the shielded balance whenever the primary was busy, so it was removed. There is one endpoint left and no second one behind it.",
       },
       {
         label: "Verify the sell path end to end",
@@ -79,7 +79,7 @@ export const PHASES: Phase[] = [
       },
       {
         label: "Widen historical coverage",
-        note: "Scans cover a recent window because of log limits. A dedicated endpoint widens it considerably.",
+        note: "Partly done. V4 pool discovery used a 400k block window, which is eleven hours on a chain with tenth-of-a-second blocks, so tokens older than that had no route at all. It now walks backwards until it finds them. Deposit scans still start from the pool's own deploy block.",
       },
     ],
   },
@@ -137,7 +137,7 @@ export const PHASES: Phase[] = [
   {
     n: "02c",
     title: "Private swaps",
-    status: "next",
+    status: "live",
     summary:
       "The pool itself trades through the REFRACT router, so what lands on chain is that the pool swapped, never that your wallet did. The routing engine and the shielded pool are the two halves of this product and this is where they meet.",
     items: [
@@ -152,6 +152,10 @@ export const PHASES: Phase[] = [
       {
         label: "Shielded proceeds",
         note: "Not in the first version. Notes are denominated in ETH, so a token bought through the pool leaves it. Holding token notes needs the asset in the commitment and a new circuit.",
+      },
+      {
+        label: "A real swap with real money",
+        note: "Proven against the live Universal Router on a fork of 4663, and not yet run on the chain itself. The V4 route executed there; the V2 and V3 encodings have still never been used in anger.",
       },
     ],
     gate:
