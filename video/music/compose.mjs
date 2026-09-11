@@ -583,6 +583,47 @@ const CUES = {
     sub(mix, 28, END, dur - END, 0.46);
     return mix;
   },
+
+  /** STOP PICKING A SIZE — three sizes struck out, then an open field. */
+  "refract-any-amount": (dur) => {
+    const mix = new Mix(dur);
+    const CHIPS = s(96), STRIKE = s(176), FIELD = s(236), TYPE = s(258);
+    const SPLIT = s(372), REDACT = s(404), END = s(556);
+
+    // Held back until the strike, so the removal of the old way is the first
+    // thing the music reacts to rather than the third.
+    bed(mix, dur, (t) => {
+      if (t < STRIKE) return 0.3;
+      if (t < FIELD) return ramp(t, STRIKE, FIELD, 0.5, 0.72);
+      if (t < SPLIT) return 0.84;
+      return 0.95;
+    }, { padGain: 0.17 });
+
+    // Each denomination arriving, then each one crossed out.
+    [0, 1, 2].forEach((i) => hat(mix, CHIPS + i * 0.3, { gain: 0.07, pan: -0.3 + i * 0.3 }));
+    [0, 1, 2].forEach((i) => tick(mix, STRIKE + i * 0.27, { gain: 0.15, pan: -0.3 + i * 0.3 }));
+
+    // The field opening is the turn, so it gets the impact.
+    riser(mix, FIELD - 1.4, 1.4, { gain: 0.18 });
+    impact(mix, FIELD, { gain: 0.56, tone: 33 });
+
+    // One tick per digit typed, tracking the picture's 46-frame type-on.
+    for (let i = 0; i < 6; i++) tick(mix, TYPE + i * (46 / FPS / 6), { gain: 0.1, pan: 0.1 });
+
+    // The split: two notes, the second left hanging because it is the half
+    // that never resolves into a visible number.
+    bassNote(mix, 38, SPLIT, 0.7, { gain: 0.3, bite: 0.4 });
+    bassNote(mix, 45, SPLIT + 0.8, 1.1, { gain: 0.26, bite: 0.35 });
+
+    // Redaction reads as something closing rather than landing.
+    swell(mix, PROG[0].pad, REDACT - 1.2, 2.2, { gain: 0.22 });
+    [67, 71, 74].forEach((m, i) => bell(mix, m, REDACT + i * 0.16, { gain: 0.12, pan: -0.35 + i * 0.35, decay: 1.6 }));
+
+    impact(mix, END, { gain: 0.44, tone: 38 });
+    pad(mix, PROG[0].pad, END, dur - END + 0.6, { gain: 0.2, open: 1 });
+    sub(mix, 38, END, dur - END, 0.45);
+    return mix;
+  },
 };
 
 /* ---------- render ------------------------------------------------------- */
@@ -597,7 +638,285 @@ const DURATIONS = {
   "refract-clone-guard": 600 / FPS,
   "refract-portfolio": 600 / FPS,
   "refract-self-custody": 540 / FPS,
+  "refract-any-amount": 660 / FPS,
 };
+
+/* ---------- motion type --------------------------------------------------
+
+   Thirteen type-driven films, scored from one builder rather than thirteen
+   hand-written cues. The picture is already described as data in
+   `src/motion/script.ts`; `emit-cues.mjs` resolves that to frame times, and
+   everything below is derived from them — a tick as each beat of type lands,
+   an impact on every beat the script marks `punch`, and the fan beat scored as
+   the resolve. Retiming a beat therefore retimes its music with no second
+   edit, which is the one thing the hand-cued scenes above cannot promise.
+
+   The four groups get four characters so a thread of them does not sound like
+   one track thirteen times: the confessions are unsettled D minor, the honesty
+   films slow and weighted in E minor, the manifesto gets the full A minor
+   arrangement the first four films share, and the craft films are warm C major.
+-------------------------------------------------------------------------- */
+
+const MOTION = JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "motion-cues.json"), "utf8"));
+
+const MOTION_GROUPS = {
+  confession: { prog: PROG_IMPACT,  lo: 0.18, hi: 0.86, chordEvery: 4, tone: 42, colour: "alarm" },
+  honesty:    { prog: PROG_CUSTODY, lo: 0.14, hi: 0.70, chordEvery: 5, tone: 38, colour: "swell" },
+  manifesto:  { prog: PROG,         lo: 0.26, hi: 1.00, chordEvery: 4, tone: 44, colour: "bells" },
+  craft:      { prog: PROG_FOLIO,   lo: 0.32, hi: 0.82, chordEvery: 4, tone: 46, colour: "arp"   },
+};
+
+function motionScore(film, dur) {
+  const mix = new Mix(dur);
+  const g = MOTION_GROUPS[film.group];
+  const bodyEnd = s(film.bodyEnd);
+  const chordAtT = (t) => g.prog[Math.floor(t / g.chordEvery) % g.prog.length];
+
+  // The kit fills out across the body, then steps back under the end card so
+  // the lockup is not competing with a full arrangement.
+  const density = (t) => (t >= bodyEnd ? 0.38 : ramp(t, 0, bodyEnd * 0.7, g.lo, g.hi));
+  drumBed(mix, g.prog, dur, density, { chordEvery: g.chordEvery, padGain: 0.14, subGain: 0.4 });
+
+  // One dry tick per beat of type. Slams get a brighter one — the set's
+  // equivalent of a key click, and the thing that makes the cuts feel written.
+  let punchIndex = 0;
+  for (const c of film.cues) {
+    const t = s(c.at);
+    if (t >= bodyEnd) continue;
+    tick(mix, t, { gain: c.k === "slam" ? 0.085 : 0.06, pitch: c.k === "slam" ? 3400 : 2200 });
+
+    if (c.punch) {
+      impact(mix, t, { gain: 0.46, tone: g.tone });
+      const chord = chordAtT(t);
+      if (g.colour === "alarm" && punchIndex === 0) {
+        // The first punch of a confession is the wrong number arriving.
+        alarmStab(mix, chord.pad[1], chord.pad[2], t + 0.12, { gain: 0.14, times: 4 });
+      } else if (g.colour === "swell") {
+        swell(mix, chord.pad, Math.max(0, t - 0.9), 1.5, { gain: 0.17 });
+      } else if (g.colour === "arp") {
+        warmArp(mix, chord.pad.slice(0, 4), t + 0.1, { gain: 0.11, step: 0.1 });
+      } else {
+        chord.pad.slice(1, 4).forEach((m, i) => bell(mix, m + 12, t + i * 0.05, { gain: 0.13, pan: -0.4 + i * 0.4, decay: 1.0 }));
+      }
+      punchIndex++;
+    }
+
+    // The resolve: the fan going out of Facet gets the brightest figure in the
+    // film, whatever the group's palette is.
+    if (c.fan) {
+      const chord = chordAtT(t);
+      warmArp(mix, chord.pad, t + 0.15, { gain: 0.13, step: 0.115 });
+      [72, 76, 79, 84].forEach((m, i) => bell(mix, m, t + 0.3 + i * 0.06, { gain: 0.12, pan: -0.5 + i * 0.33, decay: 1.3 }));
+    }
+  }
+
+  // Into the end card.
+  riser(mix, Math.max(0, bodyEnd - 1.5), 1.5, { gain: 0.16 });
+  impact(mix, bodyEnd, { gain: 0.44, tone: g.tone - 4 });
+  pad(mix, g.prog[0].pad, bodyEnd, dur - bodyEnd + 0.6, { gain: 0.2, open: 1 });
+  sub(mix, g.prog[0].sub, bodyEnd, Math.max(0.1, dur - bodyEnd), 0.45);
+  return mix;
+}
+
+for (const film of MOTION.films) {
+  const name = `refract-${film.slug}`;
+  CUES[name] = (dur) => motionScore(film, dur);
+  DURATIONS[name] = film.durationInFrames / FPS;
+}
+
+/* ---------- the three bespoke films --------------------------------------
+
+   These carry frame constants rather than a beat list, so each gets a written
+   cue like the eight explainers do — but reading `MOTION.bespoke`, which is
+   generated from `src/films/timing.ts`. Retiming a film still moves its music.
+
+   Three characters, because three different arguments: HeadToHead is a race
+   and wants a pulse, TokenFaces is generative and wants something that
+   accumulates rather than builds, OneScreen is a demo and stays out of the way
+   until the trade lands.
+-------------------------------------------------------------------------- */
+
+const B = MOTION.bespoke;
+
+// HEAD TO HEAD — B minor, driving. Two lanes, one pulse.
+const PROG_RACE = [
+  { name: "Bm",     pad: [47, 54, 59, 66], sub: 23, root: 35 },
+  { name: "G6",     pad: [43, 50, 59, 64], sub: 31, root: 43 },
+  { name: "D",      pad: [50, 57, 62, 66], sub: 26, root: 38 },
+  { name: "A/C#",   pad: [49, 57, 61, 64], sub: 25, root: 37 },
+];
+
+CUES["refract-head-to-head"] = (dur) => {
+  const mix = new Mix(dur);
+  const t = B["head-to-head"];
+  const end = s(t.end);
+  // Holds a steady drive from the moment both lanes are fed, because the film
+  // is a race and a race does not build, it runs.
+  drumBed(mix, PROG_RACE, dur, (x) => (x >= end ? 0.4 : x < s(t.send) ? 0.35 : 0.88), { chordEvery: 4 });
+
+  whoosh(mix, s(t.send) - 0.4, 0.8, { gain: 0.2 });
+  // Each probe resolving gets its own note, climbing — the sound of a search
+  // completing rather than of something being hit.
+  for (let i = 0; i < 5; i++) {
+    pluckNote(mix, [66, 69, 71, 74, 78][i], s(t.probeFrom + i * t.probeGap), { gain: 0.14, pan: -0.5 + i * 0.25, dur: 0.8 });
+  }
+  tick(mix, s(t.leftLand), { gain: 0.1, pitch: 1800 });
+  impact(mix, s(t.rightLand), { gain: 0.5, tone: 41 });
+  warmArp(mix, PROG_RACE[0].pad, s(t.rightLand) + 0.12, { gain: 0.12, step: 0.11 });
+  impact(mix, s(t.delta), { gain: 0.44, tone: 45 });
+  [74, 78, 81, 86].forEach((m, i) => bell(mix, m, s(t.delta) + 0.06 * i, { gain: 0.13, pan: -0.45 + i * 0.3, decay: 1.1 }));
+  riser(mix, end - 1.4, 1.4, { gain: 0.16 });
+  impact(mix, end, { gain: 0.42, tone: 37 });
+  pad(mix, PROG_RACE[0].pad, end, dur - end + 0.6, { gain: 0.2, open: 1 });
+  sub(mix, PROG_RACE[0].sub, end, Math.max(0.1, dur - end), 0.45);
+  return mix;
+};
+
+// TOKEN FACES — G lydian, bright and accumulating. No drums until the wall is
+// most of the way up: the film is additive, and so is the arrangement.
+const PROG_FACES = [
+  { name: "Gmaj9",  pad: [55, 59, 62, 66, 69], sub: 31, root: 43 },
+  { name: "Amaj9",  pad: [57, 61, 64, 68, 71], sub: 33, root: 45 },
+  { name: "Em9",    pad: [52, 59, 62, 66, 71], sub: 28, root: 40 },
+  { name: "Cmaj7#11", pad: [48, 55, 59, 64, 66], sub: 24, root: 36 },
+];
+
+CUES["refract-token-faces"] = (dur) => {
+  const mix = new Mix(dur);
+  const t = B["token-faces"];
+  const end = s(t.end);
+  const wall = s(t.wallFrom);
+  drumBed(mix, PROG_FACES, dur, (x) => (x >= end ? 0.35 : x < wall ? 0.2 : ramp(x, wall, s(t.hero), 0.42, 0.8)), { chordEvery: 5 });
+
+  bell(mix, 74, s(t.bloom), { gain: 0.16, decay: 1.6 });
+  // One note per disc, cycling the chord — forty eight of them, quiet enough
+  // to read as texture rather than as a melody.
+  for (let i = 1; i < t.wallCount; i++) {
+    const at = s(t.wallFrom + i * t.wallGap);
+    if (at >= end) break;
+    const chord = PROG_FACES[Math.floor(at / 5) % PROG_FACES.length];
+    pluckNote(mix, chord.pad[i % chord.pad.length] + (i % 9 === 8 ? 12 : 0), at, {
+      gain: 0.055, pan: -0.6 + ((i % 12) / 11) * 1.2, dur: 0.7,
+    });
+  }
+  swell(mix, PROG_FACES[0].pad, s(t.hero) - 1.0, 1.6, { gain: 0.18 });
+  impact(mix, s(t.hero), { gain: 0.4, tone: 43 });
+  warmArp(mix, PROG_FACES[0].pad, s(t.line), { gain: 0.12, step: 0.12 });
+  riser(mix, end - 1.4, 1.4, { gain: 0.15 });
+  impact(mix, end, { gain: 0.42, tone: 38 });
+  pad(mix, PROG_FACES[0].pad, end, dur - end + 0.6, { gain: 0.2, open: 1 });
+  sub(mix, PROG_FACES[0].sub, end, Math.max(0.1, dur - end), 0.44);
+  return mix;
+};
+
+// ONE SCREEN — A minor, the same key as the first four explainers, because
+// this one is a product demo and belongs to that family. Sparse under the
+// interface, full only once the trade is signed.
+CUES["refract-one-screen"] = (dur) => {
+  const mix = new Mix(dur);
+  const t = B["one-screen"];
+  const end = s(t.end);
+  bed(mix, dur, (x) => {
+    if (x >= end) return 0.42;
+    if (x < s(t.quoteFrom)) return 0.3;
+    if (x < s(t.pick)) return 0.55;
+    if (x < s(t.done)) return 0.72;
+    return 0.95;
+  }, { padGain: 0.15 });
+
+  // Typing, then each quote landing.
+  for (let i = 0; i < 4; i++) tick(mix, s(t.amount) + i * 0.16, { gain: 0.07, pitch: 3000 });
+  for (let i = 0; i < 6; i++) tick(mix, s(t.quoteFrom + i * t.rowGap), { gain: 0.075, pitch: 2400 + i * 120 });
+
+  impact(mix, s(t.pick), { gain: 0.46, tone: 44 });
+  [74, 78, 81].forEach((m, i) => bell(mix, m, s(t.pick) + i * 0.055, { gain: 0.14, pan: -0.35 + i * 0.35, decay: 1.0 }));
+  pluckNote(mix, 69, s(t.impact), { gain: 0.12, dur: 0.9 });
+  alarmStab(mix, 64, 67, s(t.approve), { gain: 0.1, times: 2, step: 0.16 });
+  impact(mix, s(t.done), { gain: 0.52, tone: 40 });
+  warmArp(mix, PROG[0].pad, s(t.done) + 0.12, { gain: 0.13, step: 0.11 });
+  riser(mix, end - 1.4, 1.4, { gain: 0.16 });
+  impact(mix, end, { gain: 0.42, tone: 38 });
+  pad(mix, PROG[0].pad, end, dur - end + 0.6, { gain: 0.2, open: 1 });
+  sub(mix, PROG[0].sub, end, Math.max(0.1, dur - end), 0.45);
+  return mix;
+};
+
+for (const [slug, t] of Object.entries(B)) DURATIONS[`refract-${slug}`] = t.duration / FPS;
+
+/* ---------- the comparison set -------------------------------------------
+
+   Three treatments of one brand, scored to sit apart from each other: a slow
+   orbit, a bed that stays under a speaking voice, and a hard-cut track.
+-------------------------------------------------------------------------- */
+
+const T3 = MOTION.three;
+
+// DIMENSIONAL — slow, wide, weightless. Bells on the camera's turning points.
+CUES["refract-dimensional"] = (dur) => {
+  const mix = new Mix(dur);
+  const t = T3.dimensional;
+  const end = s(t.end);
+  quietBed(mix, PROG_FOLIO, dur, { chordEvery: 5, padGain: 0.17, subGain: 0.44, open: 0.62 });
+  drumBed(mix, PROG_FOLIO, dur, (x) => (x >= end ? 0.3 : ramp(x, s(t.settle), s(t.rest), 0.2, 0.62)), { chordEvery: 5, padGain: 0.05, subGain: 0.12 });
+
+  whoosh(mix, 0, s(t.settle), { gain: 0.18 });
+  impact(mix, s(t.settle), { gain: 0.42, tone: 40 });
+  // One figure per camera move, so the score turns when the picture does.
+  [t.swing, t.cross, t.rest].forEach((frame, i) => {
+    warmArp(mix, PROG_FOLIO[(i + 1) % PROG_FOLIO.length].pad, s(frame) - 0.3, { gain: 0.1, step: 0.13 });
+    bell(mix, [79, 74, 83][i], s(frame), { gain: 0.13, pan: [-0.4, 0.4, 0][i], decay: 1.5 });
+  });
+  swell(mix, PROG_FOLIO[0].pad, s(t.line) - 1.2, 1.8, { gain: 0.18 });
+  riser(mix, end - 1.5, 1.5, { gain: 0.15 });
+  impact(mix, end, { gain: 0.42, tone: 38 });
+  pad(mix, PROG_FOLIO[0].pad, end, dur - end + 0.6, { gain: 0.2, open: 1 });
+  sub(mix, PROG_FOLIO[0].sub, end, Math.max(0.1, dur - end), 0.44);
+  return mix;
+};
+
+// FACET SPEAKS — a bed, and nothing else. It has to stay under a voice, so
+// there are no impacts and no drums: only pad, sub and a soft pulse.
+CUES["refract-facet-speaks"] = (dur) => {
+  const mix = new Mix(dur);
+  const t = T3.speaks;
+  const end = s(t.end);
+  quietBed(mix, PROG_CUSTODY, dur, { chordEvery: 5, padGain: 0.13, subGain: 0.34, open: 0.42 });
+  for (let x = 0; x < end; x += BEAT * 2) {
+    hat(mix, x, { gain: 0.03, pan: 0.12 });
+    if (x % (BEAT * 8) < 0.01) pluckNote(mix, PROG_CUSTODY[Math.floor(x / 5) % 4].pad[2], x, { gain: 0.05, dur: 1.1 });
+  }
+  swell(mix, PROG_CUSTODY[0].pad, end - 2.0, 2.0, { gain: 0.14 });
+  impact(mix, end, { gain: 0.34, tone: 38 });
+  pad(mix, PROG_CUSTODY[0].pad, end, dur - end + 0.6, { gain: 0.19, open: 1 });
+  sub(mix, PROG_CUSTODY[0].sub, end, Math.max(0.1, dur - end), 0.42);
+  return mix;
+};
+
+// QUICK CUTS — full kit from the first bar, and a hit on every cut.
+CUES["refract-quick-cuts"] = (dur) => {
+  const mix = new Mix(dur);
+  const t = T3.quick;
+  const end = s(t.end);
+  drumBed(mix, PROG_GUARD, dur, (x) => (x >= end ? 0.4 : 0.95), { chordEvery: 4 });
+  t.cuts.forEach((frame, i) => {
+    const at = s(frame);
+    if (at >= end) return;
+    impact(mix, at, { gain: 0.34, tone: 44 });
+    tick(mix, at, { gain: 0.1, pitch: 3200 });
+    stab(mix, PROG_GUARD[i % 4].pad.slice(1, 4), at, { gain: 0.13, pan: i % 2 ? 0.28 : -0.28 });
+  });
+  riser(mix, end - 1.2, 1.2, { gain: 0.18 });
+  impact(mix, end, { gain: 0.46, tone: 38 });
+  pad(mix, PROG_GUARD[0].pad, end, dur - end + 0.6, { gain: 0.2, open: 1 });
+  sub(mix, PROG_GUARD[0].sub, end, Math.max(0.1, dur - end), 0.45);
+  return mix;
+};
+
+for (const [slug, t] of Object.entries(T3)) DURATIONS[`refract-${{
+  dimensional: "dimensional", speaks: "facet-speaks", quick: "quick-cuts",
+}[slug]}`] = t.duration / FPS;
+
+
 
 /** Integrated loudness, via ffmpeg's EBU R128 meter (which reports on stderr). */
 function measureLufs(file) {
@@ -614,7 +933,19 @@ function measureLufs(file) {
  */
 const TARGET_LUFS = -15;
 
-for (const [name, build] of Object.entries(CUES)) {
+/**
+ * Optional filters: `node music/compose.mjs mt-` rebuilds only the motion-type
+ * tracks. With none given, every cue is rebuilt.
+ */
+const only = process.argv.slice(2);
+const wanted = Object.keys(CUES).filter((n) => only.length === 0 || only.some((f) => n.includes(f)));
+if (wanted.length === 0) {
+  console.error(`no cue matches ${only.join(" ")}`);
+  process.exit(1);
+}
+
+for (const name of wanted) {
+  const build = CUES[name];
   const dur = DURATIONS[name];
   const t0 = Date.now();
   const raw = path.join(OUT, `${name}.raw.wav`);

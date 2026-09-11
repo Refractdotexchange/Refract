@@ -10,6 +10,17 @@ import { PriceImpact } from "./scenes/PriceImpact";
 import { CloneGuard } from "./scenes/CloneGuard";
 import { Portfolio } from "./scenes/Portfolio";
 import { SelfCustody } from "./scenes/SelfCustody";
+import { AnyAmount } from "./scenes/AnyAmount";
+import { HeadToHead } from "./films/HeadToHead";
+import { TokenFaces } from "./films/TokenFaces";
+import { OneScreen } from "./films/OneScreen";
+import { Dimensional } from "./films/Dimensional";
+import { FacetSpeaks } from "./films/FacetSpeaks";
+import { QuickCuts } from "./films/QuickCuts";
+import { HEAD, FACES, SCREEN, DIMENSIONAL, QUICK } from "./films/timing";
+import voiceCues from "../music/voice-cues.json";
+import { MotionFilm } from "./motion/MotionFilm";
+import { FILMS } from "./motion/script";
 
 export const RemotionRoot: React.FC = () => {
   const base = { fps: FPS, width: W, height: H } as const;
@@ -31,6 +42,41 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="Portfolio" component={Portfolio} durationInFrames={600} {...base} />
       {/* 18s — custody and exact-amount approvals. */}
       <Composition id="SelfCustody" component={SelfCustody} durationInFrames={540} {...base} />
+      {/* 22s — the shielded pool with hidden amounts: no denominations, and
+          partial spends that leave the change unpublished. */}
+      <Composition id="AnyAmount" component={AnyAmount} durationInFrames={660} {...base} />
+
+      {/* Three bespoke films, each with a visual language of its own rather
+          than a variation on the explainers: a side-by-side comparison, a
+          generative one, and the product's own interface driven end to end.
+          Frame constants live in `films/timing.ts` so the scorer reads the
+          same numbers the picture does. */}
+      <Composition id="HeadToHead" component={HeadToHead} durationInFrames={HEAD.duration} {...base} />
+      <Composition id="TokenFaces" component={TokenFaces} durationInFrames={FACES.duration} {...base} />
+      <Composition id="OneScreen" component={OneScreen} durationInFrames={SCREEN.duration} {...base} />
+
+      {/* Three treatments of the same brand, built to be compared: a camera
+          orbiting an extruded Facet, Facet speaking to camera with the lip
+          sync driven by the recorded take, and a fast caption cut. */}
+      <Composition id="Dimensional" component={Dimensional} durationInFrames={DIMENSIONAL.duration} {...base} />
+      <Composition id="FacetSpeaks" component={FacetSpeaks} durationInFrames={voiceCues.durationInFrames} {...base} />
+      <Composition id="QuickCuts" component={QuickCuts} durationInFrames={QUICK.duration} {...base} />
+
+      {/* Motion type — thirteen type-driven cuts. Where the eight above draw
+          the product, these draw the writing, and Facet reacts from the corner
+          rather than demonstrating. Every one is a script in
+          `motion/script.ts`, so the composition list is generated rather than
+          hand-maintained: add a film there and it appears here. */}
+      {FILMS.map((film) => (
+        <Composition
+          key={film.id}
+          id={film.id}
+          component={MotionFilm}
+          durationInFrames={film.durationInFrames}
+          defaultProps={{ film }}
+          {...base}
+        />
+      ))}
     </>
   );
 };
