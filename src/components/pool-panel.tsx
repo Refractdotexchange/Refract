@@ -6,7 +6,7 @@ import { formatEther, formatUnits, parseEther, isAddress, zeroAddress, type Addr
 import { refractPoolAbi } from "@/lib/pool-abi-v2";
 import { REFRACT_POOL, isPoolLive } from "@/lib/pool-config";
 import { scanPool, selectNotes, type PoolScan } from "@/lib/pool-notes";
-import { buildShieldedTx } from "@/lib/prove-joinsplit";
+import { buildShieldedTx, type SwapData as SwapDataT } from "@/lib/prove-joinsplit";
 import { buildShieldedSwapCall } from "@/lib/shielded-swap";
 import { applySlippage } from "@/lib/swap";
 import type { Route } from "@/lib/quote";
@@ -164,6 +164,30 @@ export function PoolPanel() {
         inputs = picked;
       }
 
+      /*
+       * The trade has to be known before the proof is built, not after. A swap
+       * binds ExtData and SwapData together in one hash, so a proof made
+       * without the trade is bound to the wrong preimage and the contract
+       * rejects it as BadProof with nothing on screen to explain why.
+       */
+      let swapData: SwapDataT | undefined;
+      if (swapping) {
+        if (!route) throw new Error("No route for that token right now.");
+        const minOut = applySlippage(BigInt(route.amountOut), 100);
+        const call = buildShieldedSwapCall({
+          route,
+          tokenOut: { address: tokenOut.trim() as Address, native: false } as never,
+          amountIn: parsed,
+          minOut,
+        });
+        swapData = {
+          tokenOut: call.tokenOut,
+          amountOutMin: minOut,
+          recipient: recipient.trim() as Address,
+          routerCalldata: call.calldata,
+        };
+      }
+
       const tx = await buildShieldedTx({
         key,
         leaves: fresh.leaves,
@@ -172,6 +196,7 @@ export function PoolPanel() {
         withdrawAmount: depositing ? 0n : parsed,
         // A swap spends exactly like a withdrawal; only the destination differs.
         recipient: depositing ? "0x0000000000000000000000000000000000000000" : (recipient.trim() as Address),
+        swapData,
         onProgress: setStage,
       });
 
@@ -181,26 +206,9 @@ export function PoolPanel() {
        * only difference, and that is bound by the extData hash rather than by
        * the circuit.
        */
-      if (swapping) {
-        if (!route) throw new Error("No route for that token right now.");
-        const call = buildShieldedSwapCall({
-          route,
-          tokenOut: { address: tokenOut.trim() as Address, native: false } as never,
-          amountIn: parsed,
-          minOut: applySlippage(BigInt(route.amountOut), 100),
-        });
+      if (swapping && swapData) {
         setStage("Checking the transaction");
-        const swapArgs = [
-          tx.proof,
-          tx.args,
-          tx.extData,
-          {
-            tokenOut: call.tokenOut,
-            amountOutMin: applySlippage(BigInt(route.amountOut), 100),
-            recipient: recipient.trim() as Address,
-            routerCalldata: call.calldata,
-          },
-        ] as const;
+        const swapArgs = [tx.proof, tx.args, tx.extData, swapData] as const;
 
         await publicClient.simulateContract({
           address: REFRACT_POOL.address,

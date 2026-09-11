@@ -106,6 +106,24 @@ const EXT_TUPLE = [
   },
 ] as const;
 
+/** Mirrors RefractPool.SwapData. */
+export type SwapData = {
+  tokenOut: Address;
+  amountOutMin: bigint;
+  recipient: Address;
+  routerCalldata: `0x${string}`;
+};
+
+const SWAP_TUPLE = {
+  type: "tuple",
+  components: [
+    { name: "tokenOut", type: "address" },
+    { name: "amountOutMin", type: "uint256" },
+    { name: "recipient", type: "address" },
+    { name: "routerCalldata", type: "bytes" },
+  ],
+} as const;
+
 export type ExtData = {
   recipient: Address;
   extAmount: bigint;
@@ -120,8 +138,19 @@ export type ExtData = {
  * still pin down. Mirrors the contract byte for byte; if the two ever disagree
  * every transaction reverts, which is the safe direction for them to fail.
  */
-export function extDataHash(ext: ExtData): bigint {
-  return BigInt(keccak256(encodeAbiParameters(EXT_TUPLE, [ext]))) % FIELD_SIZE;
+/**
+ * `swap` hashes ExtData and SwapData together, and `transact` hashes ExtData
+ * alone. The two preimages differ on purpose, so a proof built for a payout
+ * cannot be replayed to route the same notes somewhere else. Which means the
+ * proof has to be built knowing which of the two it is for: binding a swap
+ * with the payout preimage produces a proof the contract rejects as BadProof,
+ * with nothing on screen to say why.
+ */
+export function extDataHash(ext: ExtData, swap?: SwapData): bigint {
+  const encoded = swap
+    ? encodeAbiParameters([EXT_TUPLE[0], SWAP_TUPLE], [ext, swap])
+    : encodeAbiParameters(EXT_TUPLE, [ext]);
+  return BigInt(keccak256(encoded)) % FIELD_SIZE;
 }
 
 /* ------------------------------------------------------------------ proof */
@@ -173,6 +202,7 @@ export async function buildShieldedTx({
   recipient = "0x0000000000000000000000000000000000000000",
   relayer = "0x0000000000000000000000000000000000000000",
   fee = 0n,
+  swapData,
   onProgress,
 }: {
   key: ShieldedKey;
@@ -183,6 +213,8 @@ export async function buildShieldedTx({
   recipient?: Address;
   relayer?: Address;
   fee?: bigint;
+  /** Present when the spend is a swap, so the proof binds the trade too. */
+  swapData?: SwapData;
   onProgress?: (stage: string) => void;
 }): Promise<ShieldedTx> {
   if (inputs.length > 2) throw new Error("At most two notes can be spent at once.");
@@ -246,7 +278,7 @@ export async function buildShieldedTx({
     {
       root: root.toString(),
       publicAmount: publicAmount.toString(),
-      extDataHash: extDataHash(ext).toString(),
+      extDataHash: extDataHash(ext, swapData).toString(),
       inNullifiers: nullifiers.map(String),
       outCommitments: commitments.map(String),
       inAmount: allIn.map((n) => n.amount.toString()),
@@ -278,7 +310,7 @@ export async function buildShieldedTx({
     args: {
       root: hex32(root),
       publicAmount,
-      extDataHash: hex32(extDataHash(ext)),
+      extDataHash: hex32(extDataHash(ext, swapData)),
       inNullifiers: [hex32(nullifiers[0]), hex32(nullifiers[1])],
       outCommitments: [hex32(commitments[0]), hex32(commitments[1])],
     },
