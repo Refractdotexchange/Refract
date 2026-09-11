@@ -77,7 +77,22 @@ function toSigned(word: string, bits: number): number {
  * apply here: filtering Initialize by the token's indexed slot returns one or
  * two logs, so a 400k window is two requests rather than thirty-two.
  */
-const CHUNK = 200_000;
+const CHUNK = 8_000_000;
+
+/**
+ * Scan every block, not a rolling window.
+ *
+ * This used to look back 400k blocks, which sounds generous and is not: blocks
+ * on 4663 are about a tenth of a second, so 400k is eleven hours. Any token
+ * that graduated before this morning had no route at all, including this
+ * project's own, whose newest pool was 660k blocks old and therefore invisible.
+ *
+ * A rolling window is the wrong shape regardless. Pool keys are immutable and
+ * a pool does not stop existing because it got old, so the only correct window
+ * is all of it. Filtering Initialize by the token's indexed slot returns a
+ * handful of logs however wide the range, and the node accepts 8M-block spans,
+ * so the whole chain is a few requests and the result is cached.
+ */
 
 /**
  * Every V4 pool holding `token`, recovered from PoolManager Initialize events.
@@ -85,12 +100,13 @@ const CHUNK = 200_000;
  * Pool keys are immutable once created, so this is cached for a long time: the
  * expensive part is the log scan, and the answer does not change.
  */
-export async function findV4Pools(token: Address, windowBlocks = 400_000): Promise<V4Pool[]> {
+export async function findV4Pools(token: Address, windowBlocks = 0): Promise<V4Pool[]> {
   const t = getAddress(token);
 
   return cached(`v4pools:${t}`, 30 * 60_000, async () => {
     const head = await latestBlock();
-    const from = head > BigInt(windowBlocks) ? head - BigInt(windowBlocks) : 0n;
+    // windowBlocks 0 means the whole chain, which is the default.
+    const from = windowBlocks > 0 && head > BigInt(windowBlocks) ? head - BigInt(windowBlocks) : 0n;
     const padded = ("0x" + t.slice(2).toLowerCase().padStart(64, "0")) as Hex;
 
     const ranges: { from: bigint; to: bigint }[] = [];
