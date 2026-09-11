@@ -67,7 +67,7 @@ export const PHASES: Phase[] = [
     items: [
       {
         label: "Dedicated RPC endpoint",
-        note: "Now the single point of failure, not just a UX gripe. The public fallback refused eth_getLogs without a paid token, which silently broke the shielded balance whenever the primary was busy, so it was removed. There is one endpoint left and no second one behind it.",
+        note: "Done. A dedicated endpoint serves the app through a proxy on this domain, so its key is never shipped to the browser, and the public node sits behind it if that one stops answering.",
       },
       {
         label: "Verify the sell path end to end",
@@ -86,7 +86,7 @@ export const PHASES: Phase[] = [
   {
     n: "02",
     title: "Fee capture",
-    status: "planned",
+    status: "live",
     summary:
       "Today no fee is taken at all: swaps route straight to the venue and output goes directly to you. This phase changes that, and it is what funds everything below it.",
     items: [
@@ -96,7 +96,7 @@ export const PHASES: Phase[] = [
       },
       {
         label: "Public fee accounting",
-        note: "Every unit collected, visible on a page, from the first day it exists.",
+        note: "Half done. Every figure is on-chain and readable now, fees taken, surplus found and volume per wallet, and the Routed event publishes the baseline alongside the output so the fee can be checked against it. The page that presents all of that is not built yet.",
       },
     ],
     gate:
@@ -159,16 +159,17 @@ export const PHASES: Phase[] = [
   {
     n: "03",
     title: "Cashback becomes claimable",
-    status: "planned",
+    status: "live",
     summary:
       "The accrual maths already exists and is already auditable. What is missing is the contract that holds collected fees and lets a wallet claim its share.",
     items: [
       {
-        label: "Distributor contract and claim flow",
+        label: "Claiming, with nobody to ask",
+        note: "The first design paid from a Merkle root published by a trusted account, and its own test proved that whoever published could name themselves and take the pot. It was deleted. Entitlement is now computed by the contract from volume it recorded itself, and a claim takes no account argument, so it can only ever pay its own caller.",
       },
       {
         label: "Honour everything accrued so far",
-        note: "It was computed from real on-chain history, so early users can be paid rather than reset.",
+        note: "Not done, and worth being plain about. Cashback accrues only on trades routed through the fee router, which went live today, so volume from before then earns nothing. Paying it would mean funding historical accrual out of future fees, which is a real cost and a decision rather than an oversight.",
       },
       {
         label: "The Rewards page stops needing a disclaimer",

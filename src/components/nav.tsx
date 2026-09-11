@@ -48,10 +48,6 @@ export function Nav() {
           style={{ color: "var(--text)", textDecoration: "none", flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 9 }}
         >
           <Wordmark size={28} />
-          {/* The chain is live but the product is not finished: cashback does
-              not settle yet and scans are window-bounded. Saying so in the
-              brand lockup is more honest than a footnote nobody reads. */}
-          <span className="beta-tag">BETA</span>
         </Link>
 
         {/* Layout lives in CSS, not inline: inline styles outrank the media
