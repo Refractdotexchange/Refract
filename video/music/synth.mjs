@@ -191,6 +191,24 @@ export class Mix {
 
   /** Place a mono signal at `t` seconds. `send` is how much goes to reverb. */
   add(sig, t, { gain = 1, pan = 0, send = 0 } = {}) {
+    /*
+     * A non-finite sample is fatal and silent: it lands in the reverb bus,
+     * which is recursive, so every sample after it becomes NaN too and the
+     * rest of the track renders as digital silence. That is a miserable thing
+     * to debug from the output, because the symptom appears seconds after the
+     * cause. Failing loudly here costs one pass over the buffer.
+     *
+     * The usual cause is passing a duration in seconds to an oscillator that
+     * wants samples: the array comes back empty and every read is undefined.
+     */
+    for (let i = 0; i < sig.length; i++) {
+      if (!Number.isFinite(sig[i])) {
+        throw new Error(
+          `Mix.add: non-finite sample at index ${i} of ${sig.length} (t=${t}s). ` +
+          `Check that oscillator lengths are in samples, not seconds.`,
+        );
+      }
+    }
     const start = samples(t);
     const gl = gain * Math.cos(((pan + 1) * Math.PI) / 4);
     const gr = gain * Math.sin(((pan + 1) * Math.PI) / 4);

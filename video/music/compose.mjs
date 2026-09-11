@@ -45,10 +45,17 @@ const chordAt = (i) => PROG[i % PROG.length];
 /* ---------- instruments -------------------------------------------------- */
 
 /** Wide detuned pad. Open voicing, gentle attack, sits behind everything. */
+/*
+ * Every oscillator in synth.mjs takes a length in SAMPLES. Passing seconds
+ * builds an array of four samples instead of five seconds, which is silent
+ * but throws nothing, so the mix simply loses that voice. The pads and subs
+ * were doing exactly that, which is why the scores had drums and bells and
+ * no harmony underneath them.
+ */
 function pad(mix, midis, t, dur, { gain = 0.14, open = 1, send = 0.5 } = {}) {
   const len = samples(dur);
   midis.forEach((m, i) => {
-    const v = saw(hz(m), dur, 3, 0.005 + i * 0.0012);
+    const v = saw(hz(m), len, 3, 0.005 + i * 0.0012);
     const cut = 900 + 2100 * open;
     const f = svfLowpass(v, cut, 0.5);
     const env = adsr(len, 0.5, 0.7, 0.72, Math.min(1.4, dur * 0.45));
@@ -60,7 +67,7 @@ function pad(mix, midis, t, dur, { gain = 0.14, open = 1, send = 0.5 } = {}) {
 /** Deep sine sub. Anchors the root without competing with the bassline. */
 function sub(mix, midi, t, dur, gain = 0.42) {
   const len = samples(dur);
-  const v = sine(hz(midi), dur);
+  const v = sine(hz(midi), len);
   const env = adsr(len, 0.08, 0.3, 0.85, 0.5);
   for (let i = 0; i < len; i++) v[i] *= env[i];
   mix.add(v, t, { gain });
@@ -73,7 +80,7 @@ function sub(mix, midi, t, dur, gain = 0.42) {
  */
 function bassNote(mix, midi, t, dur, { gain = 0.3, bite = 1 } = {}) {
   const len = samples(dur);
-  const v = saw(hz(midi), dur, 2, 0.004);
+  const v = saw(hz(midi), len, 2, 0.004);
   const cut = new Float32Array(len);
   for (let i = 0; i < len; i++) {
     const t01 = i / len;
@@ -125,7 +132,7 @@ function hat(mix, t, { gain = 0.11, open = false, pan = 0 } = {}) {
 function stab(mix, midis, t, { gain = 0.15, dur = 0.16, pan = 0 } = {}) {
   const len = samples(dur);
   midis.forEach((m) => {
-    const v = saw(hz(m), dur, 2, 0.006);
+    const v = saw(hz(m), len, 2, 0.006);
     const f = svfLowpass(v, 2600, 0.8);
     const env = adsr(len, 0.005, 0.07, 0.25, 0.06);
     for (let i = 0; i < len; i++) f[i] *= env[i];
@@ -134,12 +141,12 @@ function stab(mix, midis, t, { gain = 0.15, dur = 0.16, pan = 0 } = {}) {
 }
 
 function bell(mix, midi, t, { gain = 0.13, pan = 0, decay = 0.6, index = 3.2 } = {}) {
-  const v = fm(hz(midi), 2.01, index, 1.4, decay);
+  const v = fm(hz(midi), 2.01, index, samples(1.4), decay);
   mix.add(v, t, { gain, pan, send: 0.7 });
 }
 
 function pluckNote(mix, midi, t, { gain = 0.14, pan = 0, dur = 0.9 } = {}) {
-  const v = pluck(hz(midi), dur, 0.45);
+  const v = pluck(hz(midi), samples(dur), 0.45);
   const env = expEnv(v.length, dur * 0.4);
   for (let i = 0; i < v.length; i++) v[i] *= env[i];
   mix.add(v, t, { gain, pan, send: 0.5 });
@@ -262,7 +269,7 @@ function alarmStab(mix, a, b, t, { gain = 0.15, step = 0.14, times = 4 } = {}) {
     const m = i % 2 === 0 ? a : b;
     const dur = step * 0.85;
     const len = samples(dur);
-    const v = saw(hz(m), dur, 2, 0.008);
+    const v = saw(hz(m), len, 2, 0.008);
     const f = svfLowpass(v, 1900, 0.92);
     const env = adsr(len, 0.004, 0.05, 0.3, 0.05);
     for (let k = 0; k < len; k++) f[k] *= env[k];
@@ -282,7 +289,7 @@ function warmArp(mix, midis, t, { gain = 0.13, step = 0.125, octave = true } = {
 function swell(mix, midis, t, dur, { gain = 0.2 } = {}) {
   const len = samples(dur);
   midis.forEach((m, i) => {
-    const v = saw(hz(m), dur, 4, 0.007 + i * 0.001);
+    const v = saw(hz(m), len, 4, 0.007 + i * 0.001);
     const cut = new Float32Array(len);
     for (let k = 0; k < len; k++) cut[k] = 220 + 2600 * Math.pow(k / len, 1.7);
     const f = svfLowpass(v, cut, 0.6);
@@ -849,35 +856,79 @@ CUES["refract-shielded-flow"] = (dur) => {
   const mix = new Mix(dur);
   const t = B["shielded-flow"];
   const end = s(t.end);
+
+  /*
+   * Written as a track rather than a bed. The earlier version had mood and no
+   * tune, which is the reason these scores blur together: there was nothing
+   * to remember. This one has a four-bar hook that states itself under the
+   * deposit, drops out entirely while the proof is generating, and comes back
+   * an octave up on the payment landing.
+   *
+   * The phrase is written in offsets from the chord root, so it follows the
+   * progression instead of sitting on top of it.
+   */
+  const HOOK = [
+    [0, 0, 1], [7, 1, 0.5], [10, 1.5, 0.5], [12, 2, 1], [7, 3, 1],
+  ];
+  const ANSWER = [
+    [0, 0, 1], [3, 1, 0.5], [7, 1.5, 0.5], [10, 2, 1.5], [7, 3.5, 0.5],
+  ];
+
+  const UNLOCK = s(t.unlock), UP = s(t.unlocked), TYPE = s(t.typeIn);
+  const SHIELD = s(t.shielded), OUT = s(t.typeOut);
+  const PROVE = s(t.prove), SENT = s(t.sent), CHANGE = s(t.change), LINE = s(t.line);
+
+  // Harmony and rhythm. Drums cut out under the proof so the drop has somewhere
+  // to come from, which is the one thing the previous version never did.
   bed(mix, dur, (x) => {
     if (x >= end) return 0.42;
-    if (x < s(t.unlocked)) return 0.28;
-    if (x < s(t.shield)) return 0.5;
-    if (x < s(t.prove)) return 0.66;
-    if (x < s(t.sent)) return 0.84;
-    return 0.95;
-  }, { padGain: 0.15 });
+    if (x < UNLOCK) return 0.22;
+    if (x < TYPE) return 0.45;
+    if (x < SHIELD) return 0.62;
+    if (x < PROVE) return 0.86;
+    if (x < SENT) return 0.3;        // the floor drops out while proving
+    if (x < LINE) return 1;          // and everything returns
+    return 0.9;
+  }, { padGain: 0.16 });
 
-  // The signature, then the balance resolving out of nothing.
-  impact(mix, s(t.unlock), { gain: 0.4, tone: 45 });
-  warmArp(mix, PROG[0].pad, s(t.unlocked), { gain: 0.11, step: 0.1 });
+  // Driving sixteenths through the two working sections.
+  hats16(mix, SHIELD, PROVE, { gain: 0.05 });
+  hats16(mix, SENT, LINE, { gain: 0.058 });
 
-  // Typing an amount nobody had to pick from a list.
-  for (let i = 0; i < 6; i++) tick(mix, s(t.typeIn) + i * 0.17, { gain: 0.07, pitch: 2900 });
-  impact(mix, s(t.shielded), { gain: 0.5, tone: 38 });
-  [74, 78, 81].forEach((m, i) => bell(mix, m, s(t.shielded) + i * 0.06, { gain: 0.13, pan: -0.35 + i * 0.35, decay: 1.1 }));
+  // Backbeat with a body. Absent during the proof, like everything else.
+  for (let x = TYPE, i = 0; x < PROVE; x += BEAT, i++) if (i % 4 === 1 || i % 4 === 3) snare(mix, x, 0.3);
+  for (let x = SENT, i = 0; x < LINE; x += BEAT, i++) if (i % 4 === 1 || i % 4 === 3) snare(mix, x, 0.36);
 
-  for (let i = 0; i < 3; i++) tick(mix, s(t.typeOut) + i * 0.19, { gain: 0.065, pitch: 2600 });
+  // ---- the signature, and the balance resolving out of nothing ----
+  impact(mix, UNLOCK, { gain: 0.42, tone: 45 });
+  warmArp(mix, PROG[0].pad, UP, { gain: 0.11, step: 0.1 });
 
-  // Proving: a rising figure under the three stages, since it is the only
-  // part of this the viewer waits through.
-  riser(mix, s(t.prove), (t.sent - t.prove) / FPS - 0.4, { gain: 0.16 });
-  impact(mix, s(t.sent), { gain: 0.54, tone: 40 });
-  warmArp(mix, PROG[0].pad, s(t.sent) + 0.12, { gain: 0.13, step: 0.11 });
+  // ---- the hook states itself under the deposit ----
+  phrase(mix, HOOK, TYPE, PROG[0].root + 12, { gain: 0.13, pan: -0.16, cutoff: 2300 });
+  phrase(mix, ANSWER, TYPE + BAR, PROG[1].root + 12, { gain: 0.13, pan: 0.16, cutoff: 2500 });
 
-  // The change. Deliberately unresolved: bells descending, then nothing.
-  [78, 74, 69].forEach((m, i) => bell(mix, m, s(t.change) + i * 0.2, { gain: 0.12, pan: 0.3 - i * 0.3, decay: 1.7 }));
-  swell(mix, PROG[0].pad, s(t.line) - 1.2, 1.9, { gain: 0.19 });
+  for (let i = 0; i < 6; i++) tick(mix, TYPE + i * 0.17, { gain: 0.06, pitch: 2900 });
+
+  impact(mix, SHIELD, { gain: 0.5, tone: 38 });
+  phrase(mix, HOOK, SHIELD, PROG[2].root + 12, { gain: 0.15, pan: 0, cutoff: 2900 });
+  [74, 78, 81].forEach((m, i) => bell(mix, m, SHIELD + i * 0.06, { gain: 0.12, pan: -0.35 + i * 0.35, decay: 1.1 }));
+
+  for (let i = 0; i < 3; i++) tick(mix, OUT + i * 0.19, { gain: 0.06, pitch: 2600 });
+  phrase(mix, ANSWER, OUT, PROG[3].root + 12, { gain: 0.14, pan: -0.1, cutoff: 2600 });
+
+  // ---- proving: everything strips back to a rise ----
+  riser(mix, PROVE, (t.sent - t.prove) / FPS - 0.3, { gain: 0.2 });
+  for (let x = PROVE; x < SENT; x += BEAT * 2) kick(mix, x, 0.4);
+
+  // ---- paid: the drop, hook an octave up ----
+  impact(mix, SENT, { gain: 0.6, tone: 40 });
+  phrase(mix, HOOK, SENT, PROG[0].root + 12, { gain: 0.17, pan: 0, cutoff: 3400, octave: 1 });
+  phrase(mix, ANSWER, SENT + BAR, PROG[1].root + 12, { gain: 0.16, pan: 0.12, cutoff: 3200, octave: 1 });
+  warmArp(mix, PROG[0].pad, SENT + 0.12, { gain: 0.12, step: 0.11 });
+
+  // ---- the change: three bells that descend and stop, rather than resolve ----
+  [78, 74, 69].forEach((m, i) => bell(mix, m, CHANGE + i * 0.2, { gain: 0.12, pan: 0.3 - i * 0.3, decay: 1.7 }));
+  swell(mix, PROG[0].pad, LINE - 1.2, 1.9, { gain: 0.19 });
 
   riser(mix, end - 1.4, 1.4, { gain: 0.16 });
   impact(mix, end, { gain: 0.42, tone: 38 });
@@ -887,6 +938,83 @@ CUES["refract-shielded-flow"] = (dur) => {
 };
 
 for (const [slug, t] of Object.entries(B)) DURATIONS[`refract-${slug}`] = t.duration / FPS;
+
+/* ---------- third-wave instruments ---------------------------------------
+
+   The beds above carry mood but no tune, which is why they blur together on
+   a second listen. These are the pieces a track needs to be remembered: a
+   lead that actually plays a melody, a snare with a body rather than a clap,
+   and a filter that opens across a phrase so a drop has something to drop
+   into.
+--------------------------------------------------------------------------- */
+
+/** Detuned saw lead through a moving lowpass. This is the part you hum. */
+function lead(mix, midi, t, dur, { gain = 0.15, pan = 0, cutoff = 2600, q = 1.1, glide = 0 } = {}) {
+  const len = samples(dur);
+  const f = hz(midi);
+  let x;
+  if (glide) {
+    // Slide in from below, which reads as expressive rather than typed.
+    x = new Float32Array(len);
+    const from = hz(midi - glide);
+    let phase = 0;
+    for (let i = 0; i < len; i++) {
+      const k = Math.min(1, i / samples(0.06));
+      const fr = from + (f - from) * k;
+      phase += (2 * Math.PI * fr) / SR;
+      // Two detuned saws, summed by hand so the glide applies to both.
+      x[i] = ((phase % (2 * Math.PI)) / Math.PI - 1) * 0.5
+           + ((phase * 1.005 % (2 * Math.PI)) / Math.PI - 1) * 0.5;
+    }
+  } else {
+    x = saw(f, len, 3, 0.008);
+  }
+  // The filter opens over the first third of the note and closes again.
+  const cut = new Float32Array(len);
+  for (let i = 0; i < len; i++) {
+    const k = i / len;
+    cut[i] = cutoff * (0.45 + 0.55 * Math.sin(Math.min(1, k * 2.2) * Math.PI * 0.5));
+  }
+  const y = svfLowpass(x, cut, q);
+  const env = adsr(len, 0.012, 0.09, 0.72, 0.26);
+  for (let i = 0; i < len; i++) y[i] *= env[i];
+  mix.add(y, t, { gain, pan, send: 0.42 });
+}
+
+/** Snare: noise body plus a tuned thump, so it cuts where a clap does not. */
+function snare(mix, t, gain = 0.34) {
+  const len = samples(0.2);
+  const n = highpass(noise(len), 1500);
+  const body = sine(hz(50), len);
+  const env = expEnv(len, 0.052);
+  const benv = expEnv(len, 0.03);
+  const out = new Float32Array(len);
+  for (let i = 0; i < len; i++) out[i] = n[i] * env[i] * 0.8 + body[i] * benv[i] * 0.5;
+  mix.add(out, t, { gain, send: 0.3 });
+}
+
+/**
+ * A melodic phrase, given as [semitoneOffset, beatOffset, beats] triples.
+ * Offsets are from the chord root, so one phrase follows the progression
+ * instead of being rewritten per chord.
+ */
+function phrase(mix, notes, t, root, { gain = 0.15, pan = 0, cutoff = 2600, octave = 0 } = {}) {
+  for (const [off, at, len] of notes) {
+    lead(mix, root + off + octave * 12, t + at * BEAT, len * BEAT * 0.92, {
+      gain, pan, cutoff, glide: off === 0 ? 2 : 0,
+    });
+  }
+}
+
+/** Sixteenth-note driving hats with an accent pattern. */
+function hats16(mix, from, to, { gain = 0.055 } = {}) {
+  const step = BEAT / 4;
+  let i = 0;
+  for (let t = from; t < to; t += step, i++) {
+    const accent = i % 4 === 2 ? 1.5 : i % 2 === 0 ? 1 : 0.55;
+    hat(mix, t, { gain: gain * accent, open: i % 8 === 6, pan: i % 2 ? 0.22 : -0.18 });
+  }
+}
 
 /* ---------- the comparison set -------------------------------------------
 
