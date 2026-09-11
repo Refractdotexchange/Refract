@@ -222,24 +222,33 @@ export const PSWAP = {
  * partial spend from the pool, and the swap the pool executed.
  */
 export const MAINNET = {
+  /*
+   * Timed to the track rather than the other way round.
+   *
+   * The first cut put the four features landing at 22.9s, which fell straight
+   * into the music's one deep break, so the biggest moment in the picture sat
+   * under the quietest moment in the score. The music peaks at 20 to 21
+   * seconds and has faded to nothing by 27, so the payoff moved onto that peak
+   * and the film now ends before the audio dies rather than after.
+   */
   title: 14,
   /** Venues report in. */
-  route: 92,
-  routeBest: 176,
+  route: 80,
+  routeBest: 150,
   /** What the fee is carved out of. */
-  cash: 250,
-  cashClaim: 330,
+  cash: 215,
+  cashClaim: 280,
   /** Any amount in, any part out. */
-  send: 404,
-  sendChange: 476,
+  send: 345,
+  sendChange: 410,
   /** The pool trades, not you. */
-  swap: 548,
-  swapUnknown: 620,
-  /** All four, lit. */
-  cards: 688,
-  line: 754,
-  end: 800,
-  duration: 896,
+  swap: 475,
+  swapUnknown: 545,
+  /** All four, lit. Lands on the music's peak. */
+  cards: 624,
+  line: 690,
+  end: 730,
+  duration: 810,
 } as const;
 
 /** DIMENSIONAL — the camera orbit around an extruded Facet. */

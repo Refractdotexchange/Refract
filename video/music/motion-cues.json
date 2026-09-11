@@ -831,18 +831,18 @@
     "mainnet-live": {
       "id": "MainnetLive",
       "title": 14,
-      "route": 92,
-      "routeBest": 176,
-      "cash": 250,
-      "cashClaim": 330,
-      "send": 404,
-      "sendChange": 476,
-      "swap": 548,
-      "swapUnknown": 620,
-      "cards": 688,
-      "line": 754,
-      "end": 800,
-      "duration": 896
+      "route": 80,
+      "routeBest": 150,
+      "cash": 215,
+      "cashClaim": 280,
+      "send": 345,
+      "sendChange": 410,
+      "swap": 475,
+      "swapUnknown": 545,
+      "cards": 624,
+      "line": 690,
+      "end": 730,
+      "duration": 810
     }
   },
   "three": {

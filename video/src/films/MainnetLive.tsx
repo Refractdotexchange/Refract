@@ -72,7 +72,12 @@ export const MainnetLive: React.FC = () => {
 
   return (
     <Stage>
-      <Audio src={staticFile("music/refract-mainnet-live.wav")} />
+      {/*
+        * Supplied track rather than the generated score. The film was retimed
+        * to it: see films/timing.ts. The generated cue still builds with
+        * `node music/compose.mjs mainnet-live` and is one filename away.
+        */}
+      <Audio src={staticFile("music/refract-mainnet-live-track.wav")} />
       <AbsoluteFill style={{ opacity: outro }}>
         {/* header */}
         <div style={{ position: "absolute", left: 92, top: 74, display: "flex", alignItems: "center", gap: 16, opacity: ease(f, T.title, T.title + 24) }}>
