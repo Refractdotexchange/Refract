@@ -77,7 +77,16 @@ function toSigned(word: string, bits: number): number {
  * apply here: filtering Initialize by the token's indexed slot returns one or
  * two logs, so a 400k window is two requests rather than thirty-two.
  */
-const CHUNK = 8_000_000;
+/** One backwards step. Wide enough that most tokens are found in the first. */
+const WINDOW = 2_000_000n;
+/** 2M blocks is about two days here, so this reaches back roughly a month. */
+const MAX_WINDOWS = 16;
+/** Discovery stops here and returns what it has, so a quote always answers. */
+const SCAN_BUDGET_MS = 6_000;
+/** 2M halved six times is 31k, below every provider cap seen so far. */
+const MAX_SPLIT_DEPTH = 6;
+
+type ScanResult = { ok: boolean; logs: RawLog[] };
 
 /**
  * Scan every block, not a rolling window.
@@ -109,46 +118,77 @@ export async function findV4Pools(token: Address, windowBlocks = 0): Promise<V4P
     const from = windowBlocks > 0 && head > BigInt(windowBlocks) ? head - BigInt(windowBlocks) : 0n;
     const padded = ("0x" + t.slice(2).toLowerCase().padStart(64, "0")) as Hex;
 
-    const ranges: { from: bigint; to: bigint }[] = [];
-    for (let start = from; start <= head; start += BigInt(CHUNK)) {
-      const end = start + BigInt(CHUNK) - 1n;
-      ranges.push({ from: start, to: end > head ? head : end });
+    /*
+     * Ranges split themselves rather than trusting one chunk size.
+     *
+     * Providers cap eth_getLogs differently and do not agree: the public node
+     * here takes an 8M span for a quiet token, the authenticated one used in
+     * production does not, and neither takes a wide span for a token with many
+     * pools. A fixed chunk tuned against one of them fails silently against the
+     * others, because a rejected range looks exactly like a range with nothing
+     * in it. Halving on failure gets the cheap path where it is allowed and
+     * still finds everything where it is not.
+     */
+    const scan = async (f: bigint, to: bigint, topics: (Hex | null)[], depth = 0): Promise<ScanResult> => {
+      try {
+        const logs = await withRetry(() =>
+          getRawLogs({ address: CONTRACTS.uniswapV4PoolManager, fromBlock: f, toBlock: to, topics }),
+        );
+        return { ok: true, logs };
+      } catch {
+        if (to - f < 2n || depth >= MAX_SPLIT_DEPTH) return { ok: false, logs: [] };
+        const mid = f + (to - f) / 2n;
+        const [a, b] = await Promise.all([
+          scan(f, mid, topics, depth + 1),
+          scan(mid + 1n, to, topics, depth + 1),
+        ]);
+        return { ok: a.ok || b.ok, logs: [...a.logs, ...b.logs] };
+      }
+    };
+
+    /*
+     * Walk backwards from the head a window at a time and stop at the first
+     * window that finds anything, rather than sweeping the whole chain.
+     *
+     * Sweeping every block is correct and unusable: it took two minutes for a
+     * token with many pools, because each wide range came back over the
+     * provider's log limit and split all the way down. Walking backwards
+     * inverts that. A token's pools are found in the first window or two, and
+     * nothing is scanned past them.
+     */
+    /*
+     * A soft deadline, because discovery must never hold a quote hostage. Most
+     * tokens also have V2 or V3 liquidity, and a quote that returns those in a
+     * second beats one that returns everything in twelve and times out in a
+     * serverless function. Whatever has been found when the clock runs out is
+     * returned, and the next call resumes from a warm cache.
+     */
+    const deadline = Date.now() + SCAN_BUDGET_MS;
+    const results: ScanResult[] = [];
+    let collected: RawLog[] = [];
+    let to = head;
+    for (let i = 0; i < MAX_WINDOWS && to > 0n; i++) {
+      if (Date.now() > deadline) break;
+      const f = to > WINDOW ? to - WINDOW : 0n;
+      if (windowBlocks > 0 && head - f > BigInt(windowBlocks)) break;
+      const pair = await Promise.all([
+        scan(f, to, [INITIALIZE_TOPIC, null, padded, null]),
+        scan(f, to, [INITIALIZE_TOPIC, null, null, padded]),
+      ]);
+      results.push(...pair);
+      collected.push(...pair[0].logs, ...pair[1].logs);
+      // Pool keys are immutable, so the newest window that has any is enough.
+      if (collected.length > 0 || f === 0n) break;
+      to = f - 1n;
     }
 
-    // The token can be either side of the pair, so both indexed slots are scanned.
-    const tasks = ranges.flatMap(({ from: f, to }) => [
-      () =>
-        withRetry(() =>
-          getRawLogs({
-            address: CONTRACTS.uniswapV4PoolManager,
-            fromBlock: f,
-            toBlock: to,
-            topics: [INITIALIZE_TOPIC, null, padded, null],
-          }),
-        )
-          .then((logs) => ({ ok: true, logs }))
-          .catch(() => ({ ok: false, logs: [] as RawLog[] })),
-      () =>
-        withRetry(() =>
-          getRawLogs({
-            address: CONTRACTS.uniswapV4PoolManager,
-            fromBlock: f,
-            toBlock: to,
-            topics: [INITIALIZE_TOPIC, null, null, padded],
-          }),
-        )
-          .then((logs) => ({ ok: true, logs }))
-          .catch(() => ({ ok: false, logs: [] as RawLog[] })),
-    ]);
-
-    const results = await runPool(tasks, 4);
     // Every range failing is a rate limit, not "this token has no pool". Throw
     // so the empty answer is never cached as though it were real.
-    if (results.every((r) => !r.ok)) {
+    if (results.length > 0 && results.every((r) => !r.ok)) {
       throw new Error("V4 pool discovery failed on every block range.");
     }
 
-    const logs = results.flatMap((r) => r.logs);
+    const logs = collected;
     const seen = new Map<string, V4Pool>();
 
     for (const log of logs) {
