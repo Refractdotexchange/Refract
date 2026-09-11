@@ -1,0 +1,126 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:1600px;height:900px;overflow:hidden;background:#000}
+  .stage{position:relative;width:1600px;height:900px;padding:70px 84px;background:
+    radial-gradient(ellipse 56% 94% at 76% 50%, rgba(163,230,53,.15), transparent 60%),
+    radial-gradient(ellipse 44% 76% at 10% 40%, rgba(121,181,32,.07), transparent 64%),
+    #000;}
+  .grid{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(163,230,53,.06) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(163,230,53,.06) 1px,transparent 1px);
+    background-size:64px 64px;
+    -webkit-mask-image:radial-gradient(ellipse 80% 96% at 50% 50%,#000 26%,transparent 82%);}
+
+  .inner{position:relative;z-index:2;display:flex;gap:64px;height:100%;align-items:center}
+  .left{width:576px}
+  .right{flex:1;display:flex;flex-direction:column;gap:18px}
+
+  .kick{font-family:'IBM Plex Mono',monospace;font-size:15px;letter-spacing:.28em;
+        text-transform:uppercase;color:#67715f;margin-bottom:24px}
+  .head{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;
+        font-size:88px;line-height:.96;letter-spacing:-.05em;color:#f2f5ee}
+  .head b{background:linear-gradient(96deg,#f8fff0,#e6ffb3 24%,#c9f56e 54%,#a3e635);
+          -webkit-background-clip:text;background-clip:text;color:transparent}
+  .note{margin-top:30px;font-family:'Space Grotesk',sans-serif;font-size:25px;
+        color:#9ba695;line-height:1.55;max-width:510px}
+
+  .card{border-radius:22px;padding:28px 32px;border:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.025)}
+  .card.dim{opacity:.5}
+  .card.lit{background:rgba(163,230,53,.09);border:1.5px solid rgba(163,230,53,.55);
+            box-shadow:0 0 60px -18px rgba(163,230,53,.55)}
+  .ctop{display:flex;align-items:center;gap:11px;margin-bottom:18px;
+        font-family:'IBM Plex Mono',monospace;font-size:13.5px;letter-spacing:.2em;
+        text-transform:uppercase;color:#67715f}
+  .card.lit .ctop{color:#a3e635}
+  .dot{width:8px;height:8px;border-radius:2px;background:#3a4234}
+  .card.lit .dot{background:#a3e635;box-shadow:0 0 10px #a3e635}
+
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .chip{font-family:'IBM Plex Mono',monospace;font-size:22px;color:#9ba695;
+        border:1px solid rgba(255,255,255,.14);border-radius:11px;padding:9px 17px;
+        position:relative}
+  .chip.x{text-decoration:line-through;text-decoration-color:#a3e635;
+          text-decoration-thickness:2px}
+  .sub{font-family:'Space Grotesk',sans-serif;font-size:19px;color:#5e6656}
+
+  .field{display:flex;align-items:baseline;gap:12px;
+         border:1px solid rgba(163,230,53,.34);border-radius:13px;
+         padding:15px 19px;background:rgba(0,0,0,.42);margin-bottom:15px}
+  .field .v{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:37px;color:#f2f5ee}
+  .field .u{font-family:'IBM Plex Mono',monospace;font-size:23px;color:#9ba695}
+  .caret{width:2px;height:34px;background:#a3e635;margin-left:2px;align-self:center}
+
+  .split{display:flex;gap:11px}
+  .half{flex:1;border-radius:12px;padding:13px 16px;background:rgba(255,255,255,.035);
+        border:1px solid rgba(255,255,255,.08)}
+  .half .l{font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.15em;
+           text-transform:uppercase;color:#67715f;margin-bottom:6px}
+  .half .n{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:25px;color:#f2f5ee}
+  .half.hid{background:rgba(163,230,53,.13);border-color:rgba(163,230,53,.42)}
+  .half.hid .n{color:#c9f56e}
+  .blk{display:inline-block;height:22px;width:26px;border-radius:5px;vertical-align:-3px;
+       background:linear-gradient(180deg,#5c7a1c,#3d5212);border:1px solid rgba(163,230,53,.5)}
+
+  .foot{position:absolute;left:84px;right:84px;bottom:60px;display:flex;
+        align-items:flex-end;justify-content:space-between;z-index:2}
+  .url{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:33px;
+       letter-spacing:-.02em;color:#f2f5ee}
+  .meta{margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:14.5px;
+        letter-spacing:.19em;text-transform:uppercase;color:#67715f}
+  .soon{font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.3em;
+        text-transform:uppercase;color:#a3e635;border:1px solid rgba(163,230,53,.4);
+        border-radius:999px;padding:12px 26px}
+</style>
+<div class="stage">
+  <div class="grid"></div>
+  <div class="inner">
+    <div class="left">
+      <div class="kick">Shielded pool &middot; next</div>
+      <div class="head">Stop picking<br>a <b>size</b>.</div>
+      <div class="note">Deposit any amount. Spend any part of it. The rest stays hidden, and only you can see it.</div>
+    </div>
+
+    <div class="right">
+      <div class="card dim">
+        <div class="ctop"><span class="dot"></span> Every other pool</div>
+        <div class="chips">
+          <span class="chip x">0.1 ETH</span>
+          <span class="chip x">1 ETH</span>
+          <span class="chip x">10 ETH</span>
+        </div>
+        <div class="sub">Pick one. Take all of it. Nothing in between.</div>
+      </div>
+
+      <div class="card lit">
+        <div class="ctop"><span class="dot"></span> Refract</div>
+        <div class="field">
+          <span class="v">3.7164</span><span class="u">ETH</span><span class="caret"></span>
+        </div>
+        <div class="split">
+          <div class="half">
+            <div class="l">Spend</div>
+            <div class="n">1.2 ETH</div>
+          </div>
+          <div class="half hid">
+            <div class="l">Change &middot; hidden</div>
+            <div class="n"><span class="blk"></span> <span class="blk" style="width:17px"></span> ETH</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div>
+      <div class="url">refract.exchange</div>
+      <div class="meta">Zero&#8209;knowledge &middot; non&#8209;custodial &middot; 4663</div>
+    </div>
+    <div class="soon">Soon</div>
+  </div>
+</div>
