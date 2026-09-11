@@ -1,0 +1,26 @@
+import { parseAbi } from "viem";
+
+/** The subset of RefractPool the frontend calls. */
+export const refractPoolAbi = parseAbi([
+  "struct Proof { uint256[2] a; uint256[2][2] b; uint256[2] c; }",
+  "struct TransactArgs { bytes32 root; uint256 publicAmount; bytes32 extDataHash; bytes32[2] inNullifiers; bytes32[2] outCommitments; }",
+  "struct ExtData { address recipient; int256 extAmount; address relayer; uint256 fee; bytes encryptedOutput1; bytes encryptedOutput2; }",
+  "function transact(Proof proof, TransactArgs args, ExtData extData) payable",
+  "function nullifierSpent(bytes32) view returns (bool)",
+  "function isKnownRoot(bytes32) view returns (bool)",
+  "function getLastRoot() view returns (bytes32)",
+  "function nextIndex() view returns (uint32)",
+  "event NewCommitment(bytes32 indexed commitment, uint32 leafIndex, bytes encryptedNote)",
+  "event NewNullifier(bytes32 indexed nullifier)",
+  "event PublicMovement(address indexed recipient, int256 extAmount, uint256 fee)",
+  "error UnknownRoot()",
+  "error NullifierUsed()",
+  "error DuplicateNullifier()",
+  "error BadProof()",
+  "error WrongValue()",
+  "error TreeFull()",
+  "error AmountOutOfRange()",
+  "error FeeTooHigh()",
+  "error TransferFailed()",
+  "error InvalidRecipient()",
+]);
