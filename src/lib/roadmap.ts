@@ -98,13 +98,9 @@ export const PHASES: Phase[] = [
         label: "Public fee accounting",
         note: "Every unit collected, visible on a page, from the first day it exists.",
       },
-      {
-        label: "Contract audit",
-        note: "This sits in the path of user funds, so it ships after review, not before.",
-      },
     ],
     gate:
-      "This is the gate. Cashback has no funding source until fees exist, which is why the Rewards page says accrual is real but distribution is not. Everything in later phases depends on this one, and it is blocked on an audit rather than on effort.",
+      "This is the gate. Cashback has no funding source until fees exist, which is why the Rewards page says accrual is real but distribution is not. Everything in later phases depends on this one.",
   },
   {
     n: "02b",
@@ -129,7 +125,6 @@ export const PHASES: Phase[] = [
         label: "Multi-party trusted setup",
         note: "Not done. Phase one is currently a locally generated file, which means whoever generated it could forge a proof. Real funds should wait for this.",
       },
-      { label: "Contract audit before any size" },
     ],
     gate:
       "Live and working, and deliberately not promoted for real money yet. The cryptography is sound and the contract is non-custodial, but a Groth16 setup is only as trustworthy as its ceremony, and ours has had one participant. That is the honest blocker and it is named here rather than buried.",
