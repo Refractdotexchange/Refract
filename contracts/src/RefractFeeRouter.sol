@@ -2,26 +2,32 @@
 pragma solidity ^0.8.24;
 
 /**
- * RefractFeeRouter — takes a share of what routing found, never of the trade.
+ * RefractFeeRouter — takes a share of what routing found, and pays a share of
+ * that back, without anyone being able to decide who gets what.
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * A fill can never land below the baseline. That is the whole promise, and it
- * is an invariant here rather than a policy: the fee is carved out of the
- * surplus, and the surplus is by definition what the trade beat the baseline
- * by. Charge more than that and the arithmetic reverts.
+ * TWO PROMISES, BOTH ARITHMETIC RATHER THAN POLICY.
+ *
+ *   A fill never lands below the baseline because of the fee. The fee is
+ *   carved out of the surplus, and the surplus is what the trade beat the
+ *   baseline by, so charging more than that reverts.
+ *
+ *   Nobody can take anybody else's cashback. There is no owner, no publisher,
+ *   no admin and no withdraw function. A claim pays the caller, out of what the
+ *   caller's own recorded volume has accrued, and nothing else can move it.
  * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * The first draft of this system paid cashback from a Merkle root published by
+ * a trusted account. Its own test proved the problem: whoever published could
+ * name themselves in a root and take the pot. Everything below exists so that
+ * there is nobody to trust, because the inputs are already on-chain. Volume is
+ * recorded here as it happens, fees are collected here, and a share is owed by
+ * an accumulator rather than by a decision.
  *
  * The baseline is the venue you would have used without us: the plain Uniswap
- * V2 pair, priced on-chain from its own reserves at the moment of the trade.
- * It is computed here rather than passed in, because a caller who supplies
- * their own baseline simply declares it equal to the output and pays nothing.
- * An oracle or a signed quote would work too, and would put an operator back
- * in the path of user funds, which is the thing this project keeps refusing to
- * do.
- *
- * Where there is no V2 pair there is no baseline, and where there is no
- * baseline there is no fee. Treating "we could not measure it" as "all of it is
- * surplus" would turn an unmeasurable trade into the most expensive one.
+ * V2 pair, priced from its own reserves at the moment of the trade. It is read
+ * here rather than passed in, because a caller who supplies their own baseline
+ * declares it equal to the output and pays nothing.
  */
 
 interface IERC20 {
@@ -46,33 +52,48 @@ contract RefractFeeRouter {
     IUniswapV2Factory public immutable v2Factory;
     address public immutable weth;
 
-    /**
-     * Share of the surplus taken, in basis points. Immutable, because a fee
-     * that can be raised later is a fee nobody can reason about.
-     */
+    /// Share of the surplus taken, in basis points. Immutable.
     uint16 public immutable surplusFeeBps;
+    /// Share of that fee owed back to traders, in basis points. Immutable.
+    uint16 public immutable cashbackBps;
 
-    /// Hard ceiling, enforced at construction. Half of what we found, at most.
+    /// At most half of what we found.
     uint16 public constant MAX_SURPLUS_FEE_BPS = 5_000;
 
-    /// Where collected fees go. Set once, at deploy.
+    /**
+     * Where the protocol's half of the fee goes. Immutable, and deliberately
+     * powerless: it receives its share as each trade settles and has no claim
+     * on anything else in this contract, cashback included.
+     */
     address public immutable collector;
+
+    uint256 private constant PRECISION = 1e18;
 
     /* ----------------------------------------------------------------- state */
 
-    /// Fees collected per token, for the accounting page. Never reset.
+    /// Fees taken per token, for the accounting page. Never reset.
     mapping(address => uint256) public feesCollected;
     /// Surplus found per token, so the share taken is checkable against it.
     mapping(address => uint256) public surplusFound;
-    /// Volume routed per wallet and token, which is what cashback is computed from.
+    /// Cashback owed to traders in total, per token.
+    mapping(address => uint256) public cashbackReserved;
+
+    /// Routed volume, in ETH, per trader and bought token.
     mapping(address => mapping(address => uint256)) public volumeOf;
+    mapping(address => uint256) public totalVolume;
+
+    /// Cashback accrued per unit of volume, scaled by PRECISION.
+    mapping(address => uint256) public accPerVolume;
+    /// What each trader's volume had already accrued when it last changed.
+    mapping(address => mapping(address => uint256)) public rewardDebt;
+    /// Settled and unclaimed.
+    mapping(address => mapping(address => uint256)) public owed;
 
     /* ---------------------------------------------------------------- events */
 
     /**
-     * Everything the accounting page and the cashback maths need, in one place.
-     * `baseline` is published alongside `amountOut` so anyone can recompute the
-     * surplus and check the fee against it rather than taking our word.
+     * Everything the accounting page needs, and everything anyone needs to
+     * check the fee against the surplus themselves.
      */
     event Routed(
         address indexed trader,
@@ -81,8 +102,10 @@ contract RefractFeeRouter {
         uint256 amountOut,
         uint256 baseline,
         uint256 surplus,
-        uint256 fee
+        uint256 fee,
+        uint256 toCashback
     );
+    event CashbackClaimed(address indexed trader, address indexed token, uint256 amount);
 
     /* ---------------------------------------------------------------- errors */
 
@@ -92,6 +115,7 @@ contract RefractFeeRouter {
     error TransferFailed();
     error InvalidRecipient();
     error NoValue();
+    error NothingToClaim();
     error Reentrancy();
 
     uint256 private _entered = 1;
@@ -108,27 +132,25 @@ contract RefractFeeRouter {
         IUniswapV2Factory _v2Factory,
         address _weth,
         uint16 _surplusFeeBps,
+        uint16 _cashbackBps,
         address _collector
     ) {
-        if (_surplusFeeBps > MAX_SURPLUS_FEE_BPS) revert BadFee();
+        if (_surplusFeeBps > MAX_SURPLUS_FEE_BPS || _cashbackBps > 10_000) revert BadFee();
         if (_collector == address(0)) revert InvalidRecipient();
         router = _router;
         v2Factory = _v2Factory;
         weth = _weth;
         surplusFeeBps = _surplusFeeBps;
+        cashbackBps = _cashbackBps;
         collector = _collector;
     }
 
     /* ------------------------------------------------------------------ swap */
 
     /**
-     * Route native ETH into `tokenOut` and keep a share of what routing beat
-     * the baseline by.
-     *
-     * Native input only in this version. An ERC-20 input has to reach the
-     * Universal Router through Permit2, which means an allowance dance this
-     * contract would have to hold on the user's behalf, and most volume here
-     * is buying anyway.
+     * Route native ETH into `tokenOut`, keep a share of what routing beat the
+     * baseline by, and owe part of that share back to the volume that has
+     * already traded.
      */
     function swapExactEthForToken(
         address tokenOut,
@@ -147,54 +169,123 @@ contract RefractFeeRouter {
         uint256 baseline = _baselineOut(tokenOut, msg.value);
 
         /*
-         * A missing baseline means no fee, not a free hand.
-         *
-         * Reading baseline zero as "all of it is surplus" is the obvious bug
-         * and the expensive one: it charges the full share precisely on the
-         * trades where nothing justifies it. The guard is explicit rather than
-         * implied by the subtraction.
+         * A missing baseline means no fee, not a free hand. Reading baseline
+         * zero as "all of it is surplus" charges the full share precisely on
+         * the trades where nothing justifies it.
          */
         uint256 surplus = (baseline > 0 && received > baseline) ? received - baseline : 0;
         uint256 fee = (surplus * surplusFeeBps) / 10_000;
-
-        // The arithmetic above already guarantees this, and the guarantee is
-        // the product, so it is checked rather than assumed.
         if (fee > surplus) revert BadFee();
 
         delivered = received - fee;
 
         /*
-         * The promise, stated exactly: the fee never pushes a fill below the
-         * baseline. It is not that a fill can never land there at all. A route
-         * can genuinely come back worse than a V2 quote taken moments earlier,
-         * and refusing to trade in that case would block a fill the trader
-         * asked for and priced with minOut. When that happens nothing is
-         * charged, so the trader keeps every unit the route returned.
+         * The promise, exactly: the fee never pushes a fill below the baseline.
+         * Not that a fill can never land there. A route can genuinely come back
+         * worse than a V2 quote taken moments earlier, and refusing to trade
+         * then would block a fill the trader asked for and priced with minOut.
+         * In that case nothing is charged at all.
          */
         if (fee > 0 && delivered < baseline) revert InsufficientOutput();
         if (delivered < minOut) revert InsufficientOutput();
 
-        feesCollected[tokenOut] += fee;
+        // What actually reached traders, which is not always the intended
+        // share: see _accrue for the first trade in a token.
         surplusFound[tokenOut] += surplus;
-        volumeOf[msg.sender][tokenOut] += msg.value;
+        uint256 toCashback = _accrue(msg.sender, tokenOut, msg.value, fee);
 
         if (!IERC20(tokenOut).transfer(recipient, delivered)) revert TransferFailed();
-        if (fee > 0 && !IERC20(tokenOut).transfer(collector, fee)) revert TransferFailed();
 
-        emit Routed(msg.sender, tokenOut, msg.value, received, baseline, surplus, fee);
+        uint256 toCollector = fee - toCashback;
+        if (toCollector > 0 && !IERC20(tokenOut).transfer(collector, toCollector)) revert TransferFailed();
+
+        emit Routed(msg.sender, tokenOut, msg.value, received, baseline, surplus, fee, toCashback);
+    }
+
+    /**
+     * Book this trade's volume and share out its cashback.
+     *
+     * Order matters and is the whole correctness of the accumulator. The
+     * trader's existing entitlement is settled before their volume changes, so
+     * altering the volume cannot rewrite what it had already earned. The fee is
+     * then shared across the volume that existed before this trade, so nobody
+     * is paid cashback out of their own fee. Only then is the new volume added.
+     */
+    function _accrue(address trader, address token, uint256 amountIn, uint256 fee)
+        internal
+        returns (uint256 distributed)
+    {
+        uint256 acc = accPerVolume[token];
+        uint256 vol = volumeOf[trader][token];
+
+        if (vol > 0) {
+            owed[trader][token] += (vol * acc) / PRECISION - rewardDebt[trader][token];
+        }
+
+        uint256 total = totalVolume[token];
+        if (total > 0) {
+            distributed = (fee * cashbackBps) / 10_000;
+            if (distributed > 0) {
+                acc += (distributed * PRECISION) / total;
+                accPerVolume[token] = acc;
+                cashbackReserved[token] += distributed;
+            }
+        }
+        /*
+         * On the first trade in a token there is no prior volume to share
+         * with, so `distributed` stays zero and the whole fee goes to the
+         * collector. Reserving a share for nobody would strand it here
+         * permanently, since nothing but an accrued claim can ever move it.
+         */
+
+        volumeOf[trader][token] = vol + amountIn;
+        totalVolume[token] = total + amountIn;
+        rewardDebt[trader][token] = ((vol + amountIn) * acc) / PRECISION;
+
+        feesCollected[token] += fee;
+    }
+
+    /* ----------------------------------------------------------------- claim */
+
+    /**
+     * Take your own cashback. There is no argument for whose.
+     *
+     * The caller is the only account that can be paid, the amount is whatever
+     * that caller's recorded volume has accrued, and no other function in this
+     * contract moves cashback anywhere.
+     */
+    function claim(address token) external nonReentrant returns (uint256 amount) {
+        uint256 vol = volumeOf[msg.sender][token];
+        uint256 acc = accPerVolume[token];
+
+        if (vol > 0) {
+            owed[msg.sender][token] += (vol * acc) / PRECISION - rewardDebt[msg.sender][token];
+            rewardDebt[msg.sender][token] = (vol * acc) / PRECISION;
+        }
+
+        amount = owed[msg.sender][token];
+        if (amount == 0) revert NothingToClaim();
+
+        // Zeroed before the transfer, so a token that calls back finds nothing
+        // left to claim rather than a second chance at the same balance.
+        owed[msg.sender][token] = 0;
+        cashbackReserved[token] -= amount;
+
+        if (!IERC20(token).transfer(msg.sender, amount)) revert TransferFailed();
+        emit CashbackClaimed(msg.sender, token, amount);
+    }
+
+    /** What `trader` could claim right now, settled and unsettled together. */
+    function claimable(address trader, address token) external view returns (uint256) {
+        uint256 vol = volumeOf[trader][token];
+        uint256 pending = vol > 0
+            ? (vol * accPerVolume[token]) / PRECISION - rewardDebt[trader][token]
+            : 0;
+        return owed[trader][token] + pending;
     }
 
     /* -------------------------------------------------------------- baseline */
 
-    /**
-     * What a plain V2 swap would have returned for `amountIn` of ETH, priced
-     * from the pair's own reserves in this block.
-     *
-     * Returns zero when there is no pair or it holds nothing, and zero means
-     * no fee. That is deliberate: the alternative reading, that an unmeasurable
-     * baseline makes the entire output surplus, would charge the most exactly
-     * where we can justify the least.
-     */
     function _baselineOut(address tokenOut, uint256 amountIn) internal view returns (uint256) {
         address pair = v2Factory.getPair(weth, tokenOut);
         if (pair == address(0)) return 0;
@@ -206,11 +297,8 @@ contract RefractFeeRouter {
         uint256 reserveIn = wethIsToken0 ? r0 : r1;
         uint256 reserveOut = wethIsToken0 ? r1 : r0;
 
-        // Uniswap V2 constant product, with its own 0.30% fee applied.
         uint256 amountInWithFee = amountIn * 997;
-        uint256 numerator = amountInWithFee * reserveOut;
-        uint256 denominator = reserveIn * 1000 + amountInWithFee;
-        return numerator / denominator;
+        return (amountInWithFee * reserveOut) / (reserveIn * 1000 + amountInWithFee);
     }
 
     /** Quote the baseline without trading, for the accounting page. */
